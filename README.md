@@ -8,7 +8,7 @@
 
 ## Setup Mac/Linux with Makefile
 1. Clone this repo
-2. make # run this command to create environment if dont exist
+2. make # run this command to create environment and run python script
 3. make run # execute python script
 4. make fclean # cleanup the python environment
 

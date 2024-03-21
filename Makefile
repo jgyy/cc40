@@ -14,7 +14,7 @@ setup:
 	$(VENV_NAME)/bin/$(PIP) install -r $(REQUIREMENTS)
 
 clean:
-	rm -rf *.csv
+	rm -rf data
 	rm -rf *.xlsx
 	rm -rf __pycache__
 	rm -rf $(TEST_DIR)/__pycache__

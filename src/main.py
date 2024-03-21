@@ -1,5 +1,6 @@
-import json
+import os
 import csv
+import json
 from datetime import datetime
 from urllib.request import urlretrieve
 from openpyxl import load_workbook
@@ -21,6 +22,26 @@ def load_xlsx_data(file_path):
             continue
     return data
 
+rating_mapping = {
+    "Average": "Average",
+    "Bardzo dobrze": "Very Good",
+    "Bueno": "Good",
+    "Eccellente": "Excellent",
+    "Excelente": "Excellent",
+    "Excellent": "Excellent",
+    "Good": "Good",
+    "Muito Bom": "Very Good",
+    "Muy Bueno": "Very Good",
+    "Not rated": "Not rated",
+    "Poor": "Poor",
+    "Skvělá volba": "Excellent",
+    "Skvělé": "Excellent",
+    "Terbaik": "Excellent",
+    "Velmi dobré": "Very Good",
+    "Very Good": "Very Good"
+}
+
+# Extract the following fields and store the data as restaurants.csv.
 def extract_restaurants(data, country_codes):
     restaurants = []
     for item in data:
@@ -28,14 +49,17 @@ def extract_restaurants(data, country_codes):
             restaurant = restaurant_data['restaurant']
             country_code = restaurant['location']['country_id']
             country = country_codes.get(country_code, 'Unknown')
+            rating_text = restaurant['user_rating']['rating_text']
+            rating_category = rating_mapping.get(rating_text, 'Unknown')
             restaurants.append({
-                'Restaurant Id': restaurant['R']['res_id'],
-                'Restaurant Name': restaurant['name'],
-                'Country': country,
-                'City': restaurant['location']['city'],
-                'User Rating Votes': restaurant['user_rating']['votes'],
-                'User Aggregate Rating': float(restaurant['user_rating']['aggregate_rating']),
-                'Cuisines': restaurant['cuisines']
+                'Restaurant Id': restaurant['R']['res_id'] if restaurant['R']['res_id'] else 'NA',
+                'Restaurant Name': restaurant['name'] if restaurant['name'] else 'NA',
+                'Country': country if country else 'NA',
+                'City': restaurant['location']['city'] if restaurant['location']['city'] else 'NA',
+                'User Rating Votes': restaurant['user_rating']['votes'] if restaurant['user_rating']['votes'] else 'NA',
+                'User Aggregate Rating': float(restaurant['user_rating']['aggregate_rating']) if restaurant['user_rating']['aggregate_rating'] else 'NA',
+                'Rating Category': rating_category,
+                'Cuisines': restaurant['cuisines'] if restaurant['cuisines'] else 'NA'
             })
     return restaurants
 
@@ -44,7 +68,9 @@ def write_csv(file_path, data, fieldnames):
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(data)
+    print(f"Data written to {file_path}")
 
+# Extract the list of restaurants that have past event in the month of April 2019 and store the data as restaurant_events.csv.
 def extract_restaurant_events(data):
     events = []
     for item in data:
@@ -56,16 +82,17 @@ def extract_restaurant_events(data):
                     start_date = datetime.strptime(event['start_date'], '%Y-%m-%d')
                     if start_date.month == 4 and start_date.year == 2019:
                         events.append({
-                            'Event Id': event['event_id'],
-                            'Restaurant Id': restaurant['R']['res_id'],
-                            'Restaurant Name': restaurant['name'],
+                            'Event Id': event['event_id'] if event['event_id'] else 'NA',
+                            'Restaurant Id': restaurant['R']['res_id'] if restaurant['R']['res_id'] else 'NA',
+                            'Restaurant Name': restaurant['name'] if restaurant['name'] else 'NA',
                             'Photo URL': event['photos'][0]['photo']['url'] if event['photos'] else 'NA',
-                            'Event Title': event['title'],
-                            'Event Start Date': event['start_date'],
-                            'Event End Date': event['end_date']
+                            'Event Title': event['title'] if event['title'] else 'NA',
+                            'Event Start Date': event['start_date'] if event['start_date'] else 'NA',
+                            'Event End Date': event['end_date'] if event['end_date'] else 'NA'
                         })
     return events
 
+# From the dataset (restaurant_data.json), determine the threshold for the different rating text based on aggregate rating.
 def get_rating_thresholds(data):
     ratings = []
     for item in data:
@@ -110,20 +137,27 @@ def get_rating_thresholds(data):
     
     return thresholds
 
+def ensure_folder_exists(folder_path):
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
 if __name__ == '__main__':
+    data_folder = 'data'
+    ensure_folder_exists(data_folder)
+    
     url = 'https://raw.githubusercontent.com/Papagoat/brain-assessment/main/restaurant_data.json'
-    urlretrieve(url, 'restaurant_data.json')
-    data = load_json_data('restaurant_data.json')
+    urlretrieve(url, os.path.join(data_folder, 'restaurant_data.json'))
+    data = load_json_data(os.path.join(data_folder, 'restaurant_data.json'))
     
     country_codes_url = 'https://github.com/Papagoat/brain-assessment/blob/main/Country-Code.xlsx?raw=true'
-    urlretrieve(country_codes_url, 'Country-Code.xlsx')
-    country_codes = load_xlsx_data('Country-Code.xlsx')
+    urlretrieve(country_codes_url, os.path.join(data_folder, 'Country-Code.xlsx'))
+    country_codes = load_xlsx_data(os.path.join(data_folder, 'Country-Code.xlsx'))
     
     restaurants = extract_restaurants(data, country_codes)
-    write_csv('restaurants.csv', restaurants, fieldnames=restaurants[0].keys())
+    write_csv(os.path.join(data_folder, 'restaurants.csv'), restaurants, fieldnames=restaurants[0].keys())
     
     events = extract_restaurant_events(data)
-    write_csv('restaurant_events.csv', events, fieldnames=events[0].keys())
+    write_csv(os.path.join(data_folder, 'restaurant_events.csv'), events, fieldnames=events[0].keys())
     
     thresholds = get_rating_thresholds(data)
     print("User Aggregate Rating Thresholds:")
