@@ -1,17 +1,17 @@
-PYTHON = python3
-PIP = pip3
+PYTHON = python3.11
+PIP = pip
+VENV_NAME = venv
 REQUIREMENTS = requirements.txt
 SRC_DIR = src
 TEST_DIR = tests
-JSON_DATA = restaurant_data.json
-XLSX_DATA = Country-Code.xlsx
-OUTPUT_DIR = output
 
-all: setup
-	$(PYTHON) $(SRC_DIR)/main.py
+.PHONY: all setup clean fclean test venv re
+
+all: venv setup
+	$(VENV_NAME)/bin/$(PYTHON) $(SRC_DIR)/main.py
 
 setup:
-	$(PIP) install -r $(REQUIREMENTS)
+	$(VENV_NAME)/bin/$(PIP) install -r $(REQUIREMENTS)
 
 clean:
 	rm -rf $(OUTPUT_DIR)/*.csv
@@ -19,10 +19,16 @@ clean:
 	rm -rf $(TEST_DIR)/__pycache__
 	rm -rf $(SRC_DIR)/__pycache__
 
+fclean: clean
+	rm -rf $(VENV_NAME)
+
 test:
-	$(PYTHON) -m unittest discover $(TEST_DIR)
+	$(VENV_NAME)/bin/$(PYTHON) -m unittest discover $(TEST_DIR)
 
 run:
-	$(PYTHON) $(SRC_DIR)/main.py $(JSON_DATA) $(XLSX_DATA) $(OUTPUT_DIR)
+	$(VENV_NAME)/bin/$(PYTHON) $(SRC_DIR)/main.py
 
-.PHONY: all setup clean test
+venv:
+	$(PYTHON) -m venv $(VENV_NAME)
+
+re: fclean all
