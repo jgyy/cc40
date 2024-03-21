@@ -1,22 +1,37 @@
 import json
 import csv
 from datetime import datetime
-from urllib.request import urlopen
+from urllib.request import urlretrieve
+from openpyxl import load_workbook
 
-def load_data(url):
-    with urlopen(url) as response:
-        data = json.load(response)
+def load_json_data(file_path):
+    with open(file_path) as file:
+        data = json.load(file)
     return data
 
-def extract_restaurants(data):
+def load_xlsx_data(file_path):
+    workbook = load_workbook(file_path)
+    sheet = workbook.active
+    data = {}
+    for row in sheet.iter_rows(values_only=True):
+        try:
+            code, country = row
+            data[int(code)] = country
+        except (ValueError, TypeError):
+            continue
+    return data
+
+def extract_restaurants(data, country_codes):
     restaurants = []
     for item in data:
         for restaurant_data in item['restaurants']:
             restaurant = restaurant_data['restaurant']
+            country_code = restaurant['location']['country_id']
+            country = country_codes.get(country_code, 'Unknown')
             restaurants.append({
                 'Restaurant Id': restaurant['R']['res_id'],
                 'Restaurant Name': restaurant['name'],
-                'Country': restaurant['location']['country_id'],
+                'Country': country,
                 'City': restaurant['location']['city'],
                 'User Rating Votes': restaurant['user_rating']['votes'],
                 'User Aggregate Rating': float(restaurant['user_rating']['aggregate_rating']),
@@ -95,12 +110,16 @@ def get_rating_thresholds(data):
     
     return thresholds
 
-# Fetch data from url as it is too huge
 if __name__ == '__main__':
     url = 'https://raw.githubusercontent.com/Papagoat/brain-assessment/main/restaurant_data.json'
-    data = load_data(url)
+    urlretrieve(url, 'restaurant_data.json')
+    data = load_json_data('restaurant_data.json')
     
-    restaurants = extract_restaurants(data)
+    country_codes_url = 'https://github.com/Papagoat/brain-assessment/blob/main/Country-Code.xlsx?raw=true'
+    urlretrieve(country_codes_url, 'Country-Code.xlsx')
+    country_codes = load_xlsx_data('Country-Code.xlsx')
+    
+    restaurants = extract_restaurants(data, country_codes)
     write_csv('restaurants.csv', restaurants, fieldnames=restaurants[0].keys())
     
     events = extract_restaurant_events(data)
