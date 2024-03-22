@@ -5,7 +5,7 @@ REQUIREMENTS = requirements.txt
 SRC_DIR = src
 TEST_DIR = tests
 
-..PHONY: all setup clean fclean re test venv lint
+.PHONY: all setup clean fclean re test venv lint
 
 all: venv setup
 	$(VENV_NAME)/bin/$(PYTHON) $(SRC_DIR)/main.py
