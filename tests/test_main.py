@@ -1,19 +1,25 @@
 import unittest
 import os
 from urllib.request import urlretrieve
-from src.main import load_json_data, load_xlsx_data, extract_restaurants, extract_restaurant_events, get_rating_thresholds
+from src.main import (load_json_data, load_xlsx_data, extract_restaurants,
+                      extract_restaurant_events, get_rating_thresholds)
+
 
 class TestRestaurantData(unittest.TestCase):
     def setUp(self):
         self.data_folder = 'test_data'
         os.makedirs(self.data_folder, exist_ok=True)
-        
-        self.restaurant_data_file = os.path.join(self.data_folder, 'restaurant_data.json')
-        url = 'https://raw.githubusercontent.com/Papagoat/brain-assessment/main/restaurant_data.json'
+
+        self.restaurant_data_file = os.path.join(
+            self.data_folder, 'restaurant_data.json')
+        url = ('https://raw.githubusercontent.com/Papagoat/brain-assessment/'
+               'main/restaurant_data.json')
         urlretrieve(url, self.restaurant_data_file)
-        
-        self.country_codes_file = os.path.join(self.data_folder, 'Country-Code.xlsx')
-        country_codes_url = 'https://github.com/Papagoat/brain-assessment/blob/main/Country-Code.xlsx?raw=true'
+
+        self.country_codes_file = os.path.join(
+            self.data_folder, 'Country-Code.xlsx')
+        country_codes_url = ('https://github.com/Papagoat/brain-assessment/'
+                             'blob/main/Country-Code.xlsx?raw=true')
         urlretrieve(country_codes_url, self.country_codes_file)
 
     def tearDown(self):
@@ -47,6 +53,7 @@ class TestRestaurantData(unittest.TestCase):
         data = load_json_data(self.restaurant_data_file)
         thresholds = get_rating_thresholds(data)
         self.assertIsInstance(thresholds, dict)
+
 
 if __name__ == '__main__':
     unittest.main()

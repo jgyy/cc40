@@ -1,11 +1,11 @@
-PYTHON = python3.11
+PYTHON = python3
 PIP = pip
 VENV_NAME = venv
 REQUIREMENTS = requirements.txt
 SRC_DIR = src
 TEST_DIR = tests
 
-.PHONY: all setup clean fclean test venv re
+..PHONY: all setup clean fclean re test venv lint
 
 all: venv setup
 	$(VENV_NAME)/bin/$(PYTHON) $(SRC_DIR)/main.py
@@ -15,7 +15,6 @@ setup:
 
 clean:
 	rm -rf data
-	rm -rf *.xlsx
 	rm -rf __pycache__
 	rm -rf $(TEST_DIR)/__pycache__
 	rm -rf $(SRC_DIR)/__pycache__
@@ -31,5 +30,8 @@ run:
 
 venv:
 	$(PYTHON) -m venv $(VENV_NAME)
+
+lint:
+	$(VENV_NAME)/bin/flake8 $(SRC_DIR) $(TEST_DIR)
 
 re: fclean all
