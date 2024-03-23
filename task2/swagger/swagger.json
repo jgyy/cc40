@@ -1,0 +1,378 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Carpark Availability API",
+    "description": "API to retrieve carpark information and availability",
+    "version": "1.0.0"
+  },
+  "host": "api.parkingsgowhere.com",
+  "schemes": [
+    "https"
+  ],
+  "basePath": "/v1",
+  "paths": {
+    "/carparks": {
+      "get": {
+        "summary": "Get empty carpark lots",
+        "description": "Retrieves a list of carparks with available lots near the provided location",
+        "parameters": [
+          {
+            "name": "lat",
+            "in": "query",
+            "required": true,
+            "type": "number",
+            "format": "double",
+            "description": "Latitude of the user's location or input location"
+          },
+          {
+            "name": "lng",
+            "in": "query",
+            "required": true,
+            "type": "number",
+            "format": "double",
+            "description": "Longitude of the user's location or input location"
+          },
+          {
+            "name": "radius",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "default": 1000,
+            "description": "Search radius in meters (defaults to 1km)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Carpark"
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid location provided"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/carparks/{car_park_no}": {
+      "get": {
+        "summary": "Get carpark details",
+        "description": "Retrieves details of a specific carpark",
+        "parameters": [
+          {
+            "name": "car_park_no",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Unique carpark number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "schema": {
+              "$ref": "#/definitions/Carpark"
+            }
+          },
+          "404": {
+            "description": "Carpark not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/carparks/{car_park_no}/availability": {
+      "get": {
+        "summary": "Get carpark availability",
+        "description": "Retrieves current availability for a specific carpark",
+        "parameters": [
+          {
+            "name": "car_park_no",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Unique carpark number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "lots_available": {
+                  "type": "integer"
+                },
+                "total_lots": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Carpark not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/carparks/{car_park_no}/availability/historical": {
+      "get": {
+        "summary": "Get historical availability data",
+        "description": "Retrieves historical availability data for a specific carpark",
+        "parameters": [
+          {
+            "name": "car_park_no",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Unique carpark number"
+          },
+          {
+            "name": "start_date",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "format": "date",
+            "description": "Start date for historical data"
+          },
+          {
+            "name": "end_date",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "format": "date",
+            "description": "End date for historical data"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "lots_available": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid date range provided"
+          },
+          "404": {
+            "description": "Carpark not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/carparks/{car_park_no}/pricing": {
+      "get": {
+        "summary": "Get carpark pricing",
+        "description": "Retrieves pricing information for a specific carpark",
+        "parameters": [
+          {
+            "name": "car_park_no",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Unique carpark number"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "parking_rates": {
+                  "type": "object",
+                  "description": "Detailed parking rates for different time periods"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Carpark not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/carparks/{car_park_no}/reserve": {
+      "post": {
+        "summary": "Reserve a parking lot",
+        "description": "Allows reserving a parking lot in a specific carpark",
+        "parameters": [
+          {
+            "name": "car_park_no",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Unique carpark number"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "user_id": {
+                  "type": "string",
+                  "description": "Unique identifier of the user reserving the lot"
+                },
+                "license_plate": {
+                  "type": "string",
+                  "description": "License plate number of the vehicle"
+                },
+                "duration_mins": {
+                  "type": "integer",
+                  "description": "Duration of the reservation in minutes"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful reservation",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "reservation_id": {
+                  "type": "string",
+                  "description": "Unique identifier for the reservation"
+                },
+                "expiry_time": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Expiry time of the reservation"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid reservation request"
+          },
+          "404": {
+            "description": "Carpark not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }  
+    },
+    "/reservations/{reservation_id}/cancel": {
+      "post": {
+        "summary": "Cancel a reservation",
+        "description": "Cancels a specific reservation",
+        "parameters": [
+          {
+            "name": "reservation_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Unique identifier of the reservation"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful cancellation"
+          },
+          "400": {
+            "description": "Invalid reservation ID"
+          },
+          "404": {
+            "description": "Reservation not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    }
+  },
+
+  "definitions": {
+    "Carpark": {
+      "type": "object",
+      "properties": {
+        "car_park_no": {
+          "type": "string",
+          "description": "Unique carpark number"
+        },
+        "address": {
+          "type": "string",
+          "description": "Address of the carpark" 
+        },
+        "lat": {
+          "type": "number",
+          "format": "double",
+          "description": "Latitude coordinate of carpark"
+        },
+        "lng": {
+          "type": "number", 
+          "format": "double",
+          "description": "Longitude coordinate of carpark"
+        },
+        "car_park_type": {
+          "type": "string",
+          "description": "Type of carpark (e.g. multistorey, surface, etc.)"
+        },
+        "parking_system": {
+          "type": "string",
+          "description": "Type of parking system (e.g. coupon, electronic)"
+        },
+        "short_term_parking": {
+          "type": "string",
+          "description": "Short term parking timings"
+        },
+        "free_parking": {
+          "type": "string",
+          "description": "Free parking timings" 
+        },
+        "night_parking": {
+          "type": "string",
+          "description": "Night parking availability"
+        },
+        "car_park_decks": {
+          "type": "integer",
+          "description": "Number of parking decks"
+        },
+        "gantry_height": {
+          "type": "number",
+          "format": "float",
+          "description": "Height of entry gantry in meters"
+        },
+        "car_park_basement": {
+          "type": "string",
+          "description": "Availability of basement parking" 
+        }
+      }
+    }
+  }
+}
