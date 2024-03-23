@@ -39,15 +39,54 @@
             "type": "integer",
             "default": 1000,
             "description": "Search radius in meters (defaults to 1km)"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "default": 1,
+            "description": "Page number for paginated results"
+          },
+          {
+            "name": "per_page",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "default": 20,
+            "description": "Number of results per page"
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "default": "distance",
+            "enum": ["distance", "lots_available"],
+            "description": "Sort the results by distance or available lots"
           }
         ],
         "responses": {
           "200": {
             "description": "Successful response",
             "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/Carpark"
+              "type": "object",
+              "properties": {
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Carpark"
+                  }
+                },
+                "total_results": {
+                  "type": "integer"
+                },
+                "current_page": {
+                  "type": "integer"
+                },
+                "total_pages": {
+                  "type": "integer"
+                }
               }
             }
           },
@@ -113,6 +152,10 @@
                 },
                 "total_lots": {
                   "type": "integer"
+                },
+                "last_updated": {
+                  "type": "string",
+                  "format": "date-time"
                 }
               }
             }
@@ -153,6 +196,15 @@
             "type": "string",
             "format": "date",
             "description": "End date for historical data"
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "default": "hour",
+            "enum": ["hour", "day", "week", "month"],
+            "description": "Aggregation interval for historical data"
           }
         ],
         "responses": {
@@ -163,9 +215,9 @@
               "items": {
                 "type": "object",
                 "properties": {
-                  "date": {
+                  "timestamp": {
                     "type": "string",
-                    "format": "date"
+                    "format": "date-time"
                   },
                   "lots_available": {
                     "type": "integer"
@@ -206,8 +258,25 @@
               "type": "object",
               "properties": {
                 "parking_rates": {
-                  "type": "object",
-                  "description": "Detailed parking rates for different time periods"
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "vehicle_type": {
+                        "type": "string",
+                        "description": "Type of vehicle (e.g., car, motorcycle)"
+                      },
+                      "time_period": {
+                        "type": "string",
+                        "description": "Time period for the parking rate"
+                      },
+                      "rate": {
+                        "type": "number",
+                        "format": "float",
+                        "description": "Parking rate for the specified time period"
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -221,17 +290,128 @@
         }
       }
     },
-    "/carparks/{car_park_no}/reserve": {
+    "/users": {
       "post": {
-        "summary": "Reserve a parking lot",
-        "description": "Allows reserving a parking lot in a specific carpark",
+        "summary": "Create a new user",
+        "description": "Creates a new user account",
         "parameters": [
           {
-            "name": "car_park_no",
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "username": {
+                  "type": "string",
+                  "description": "Unique username for the user"
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "description": "User's email address"
+                },
+                "password": {
+                  "type": "string",
+                  "format": "password",
+                  "description": "User's password"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "User created successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "user_id": {
+                  "type": "string",
+                  "description": "Unique identifier for the user"
+                },
+                "username": {
+                  "type": "string",
+                  "description": "Username of the created user"
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "description": "Email address of the created user"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid user data provided"
+          },
+          "409": {
+            "description": "Username or email already exists"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/users/{user_id}": {
+      "get": {
+        "summary": "Get user profile",
+        "description": "Retrieves the profile information of a specific user",
+        "parameters": [
+          {
+            "name": "user_id",
             "in": "path",
             "required": true,
             "type": "string",
-            "description": "Unique carpark number"
+            "description": "Unique identifier of the user"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "user_id": {
+                  "type": "string",
+                  "description": "Unique identifier for the user"
+                },
+                "username": {
+                  "type": "string",
+                  "description": "Username of the user"
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "description": "Email address of the user"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Timestamp of user creation"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update user profile",
+        "description": "Updates the profile information of a specific user",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "Unique identifier of the user"
           },
           {
             "name": "body",
@@ -240,17 +420,14 @@
             "schema": {
               "type": "object",
               "properties": {
-                "user_id": {
+                "username": {
                   "type": "string",
-                  "description": "Unique identifier of the user reserving the lot"
+                  "description": "Updated username for the user"
                 },
-                "license_plate": {
+                "email": {
                   "type": "string",
-                  "description": "License plate number of the vehicle"
-                },
-                "duration_mins": {
-                  "type": "integer",
-                  "description": "Duration of the reservation in minutes"
+                  "format": "email",
+                  "description": "Updated email address for the user"
                 }
               }
             }
@@ -258,56 +435,92 @@
         ],
         "responses": {
           "200": {
-            "description": "Successful reservation",
+            "description": "User profile updated successfully",
             "schema": {
               "type": "object",
               "properties": {
-                "reservation_id": {
+                "user_id": {
                   "type": "string",
-                  "description": "Unique identifier for the reservation"
+                  "description": "Unique identifier for the user"
                 },
-                "expiry_time": {
+                "username": {
                   "type": "string",
-                  "format": "date-time",
-                  "description": "Expiry time of the reservation"
+                  "description": "Updated username of the user"
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "description": "Updated email address of the user"
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid reservation request"
+            "description": "Invalid user data provided"
           },
           "404": {
-            "description": "Carpark not found"
+            "description": "User not found"
           },
           "500": {
             "description": "Internal server error"
           }
         }
-      }  
+      }
     },
-    "/reservations/{reservation_id}/cancel": {
-      "post": {
-        "summary": "Cancel a reservation",
-        "description": "Cancels a specific reservation",
+    "/users/{user_id}/reservations": {
+      "get": {
+        "summary": "Get user reservations",
+        "description": "Retrieves the list of reservations made by a specific user",
         "parameters": [
           {
-            "name": "reservation_id",
+            "name": "user_id",
             "in": "path",
             "required": true,
             "type": "string",
-            "description": "Unique identifier of the reservation"
+            "description": "Unique identifier of the user"
           }
         ],
         "responses": {
           "200": {
-            "description": "Successful cancellation"
-          },
-          "400": {
-            "description": "Invalid reservation ID"
+            "description": "Successful response",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "reservation_id": {
+                    "type": "string",
+                    "description": "Unique identifier for the reservation"
+                  },
+                  "car_park_no": {
+                    "type": "string",
+                    "description": "Unique carpark number"
+                  },
+                  "license_plate": {
+                    "type": "string",
+                    "description": "License plate number of the reserved vehicle"
+                  },
+                  "start_time": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "Start time of the reservation"
+                  },
+                  "end_time": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "End time of the reservation"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["active", "completed", "cancelled"],
+                    "description": "Status of the reservation"
+                  }
+                }
+              }
+            }
           },
           "404": {
-            "description": "Reservation not found"
+            "description": "User not found"
           },
           "500": {
             "description": "Internal server error"
