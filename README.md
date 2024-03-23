@@ -29,27 +29,68 @@ Located in task2 directory, currently it is all pseudo code for both IAC and bac
 ## Makefile
 WIP, added to attempt to create aws resources
 
-## Architecture and Design
+## Architecture
+
+### Serverless Architecture with Data Processing:
 ```txt
-    +-----------------+
-    |  Mobile App     |
-    +-----------------+
-            |
-            v
-+-------------------------+
-|  API Gateway            |
-+-------------------------+
-            |
-            v
-+-------------------------+
-|  Lambda Function        |
-+-------------------------+
-            |
-            v
-+-------------------------+
-|  DynamoDB               |
-+-------------------------+
+Mobile App -> API Gateway -> Lambda -> DynamoDB
+                                    -> S3 (Data Storage)
+                                    -> Kinesis Data Streams -> Lambda (Data Processing) -> DynamoDB
+``` 
+
+### Serverless Architecture with Caching:
+```txt
+Mobile App -> API Gateway -> Lambda -> DynamoDB
+                                    -> ElastiCache (Caching)
 ```
+
+### Serverless Architecture with Event-Driven Updates:
+```txt
+Mobile App -> API Gateway -> Lambda -> DynamoDB
+                                    -> SNS (Notification Service)
+Carpark Data Source -> S3 -> Lambda -> DynamoDB
+                                    -> SNS (Notification Service)
+```
+
+### Serverless Architecture with API Composition:
+```txt
+Mobile App -> API Gateway -> Lambda (Carpark Availability API) -> DynamoDB
+                                                               -> Lambda (Carpark Details API) -> DynamoDB
+```
+
+### Serverless Architecture with EventBridge:
+```txt
+Mobile App -> API Gateway -> Lambda -> DynamoDB
+                                    -> EventBridge -> Lambda (Data Sync) -> External API
+```
+
+## System Design
+
+- From mobile app send HTTP Request
+- Invoke Backend Server
+1. Parse Request
+2. Validate Request
+3. Determine User Location
+   - Extract location from request payload
+   - If location not provided, use default location
+4. Retrieve Nearby Carparks
+   - Query database based on user location
+   - Use GSI (Global Secondary Index) for efficient querying
+   - Apply radius filter to get carparks within a certain distance
+5. Filter Available Carparks
+   - Iterate over retrieved carparks
+   - Check availability status of each carpark
+   - Filter out carparks with no available lots
+6. Retrieve Carpark Details
+   - For each available carpark, retrieve additional details
+   - Query database Carpark Details table
+   - Enrich the response with carpark details
+7. Prepare Response
+   - Format the response payload
+   - Include carpark availability and details
+8. Return Response
+   - Send the response back to the API Gateway
+- HTTP Response back to mobile app
 
 ## Database Schema (DynamoDB):
 
