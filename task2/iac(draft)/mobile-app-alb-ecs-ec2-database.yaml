@@ -1,0 +1,69 @@
+Resources:
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: MobileAppALB
+      Scheme: internet-facing
+      Subnets:
+        - !Ref SubnetA
+        - !Ref SubnetB
+
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ALBTargetGroup
+
+  ALBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: MobileAppTargetGroup
+      Port: 80
+      Protocol: HTTP
+      VpcId: !Ref VPC
+
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: MobileAppCluster
+
+  EC2TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: MobileAppTask
+      ContainerDefinitions:
+        - Name: MobileAppContainer
+          Image: your-docker-image
+          PortMappings:
+            - ContainerPort: 80
+
+  EC2Service:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: MobileAppService
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref EC2TaskDefinition
+      DesiredCount: 1
+      LaunchType: EC2
+      LoadBalancers:
+        - ContainerName: MobileAppContainer
+          ContainerPort: 80
+          TargetGroupArn: !Ref ALBTargetGroup
+
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: MobileAppTable
+      AttributeDefinitions:
+        - AttributeName: ID
+          AttributeType: S
+      KeySchema:
+        - AttributeName: ID
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5

@@ -1,0 +1,38 @@
+Resources:
+  ApiGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: DataSyncAPI
+
+  Lambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: DataSyncLambda
+      Runtime: nodejs14.x
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          exports.handler = async (event) => {
+            // Lambda code
+          };
+
+  EventBridgeRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: DataSyncRule
+      ScheduleExpression: 'rate(1 hour)'
+      Targets:
+        - Arn: !GetAtt DataSyncLambda.Arn
+          Id: DataSyncLambdaTarget
+
+  DataSyncLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: DataSyncLambda
+      Runtime: nodejs14.x
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          exports.handler = async (event) => {
+            // Data Sync Lambda code
+          };

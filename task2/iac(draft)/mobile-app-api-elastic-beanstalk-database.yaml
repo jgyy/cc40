@@ -1,0 +1,35 @@
+Resources:
+  ApiGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: MobileAppAPI
+
+  ElasticBeanstalkApplication:
+    Type: AWS::ElasticBeanstalk::Application
+    Properties:
+      ApplicationName: MobileApp
+
+  ElasticBeanstalkEnvironment:
+    Type: AWS::ElasticBeanstalk::Environment
+    Properties:
+      ApplicationName: !Ref ElasticBeanstalkApplication
+      EnvironmentName: MobileAppEnvironment
+      SolutionStackName: '64bit Amazon Linux 2 v5.4.0 running Node.js 14'
+      OptionSettings:
+        - Namespace: aws:autoscaling:launchconfiguration
+          OptionName: InstanceType
+          Value: t2.micro
+
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: MobileAppTable
+      AttributeDefinitions:
+        - AttributeName: ID
+          AttributeType: S
+      KeySchema:
+        - AttributeName: ID
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5

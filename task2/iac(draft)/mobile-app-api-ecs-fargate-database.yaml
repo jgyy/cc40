@@ -1,0 +1,54 @@
+Resources:
+  ApiGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: MobileAppAPI
+
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: MobileAppCluster
+
+  FargateTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: MobileAppTask
+      Cpu: 256
+      Memory: 512
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ContainerDefinitions:
+        - Name: MobileAppContainer
+          Image: your-docker-image
+          PortMappings:
+            - ContainerPort: 80
+
+  FargateService:
+    Type: AWS::ECS::Service
+    Properties:
+      ServiceName: MobileAppService
+      Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref FargateTaskDefinition
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - !Ref SubnetA
+            - !Ref SubnetB
+
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: MobileAppTable
+      AttributeDefinitions:
+        - AttributeName: ID
+          AttributeType: S
+      KeySchema:
+        - AttributeName: ID
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5

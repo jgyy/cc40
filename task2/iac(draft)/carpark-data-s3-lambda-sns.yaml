@@ -1,0 +1,22 @@
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: carpark-data-bucket
+
+  Lambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: CarparkDataProcessingLambda
+      Runtime: nodejs14.x
+      Handler: index.handler
+      Code:
+        ZipFile: |
+          exports.handler = async (event) => {
+            // Lambda code
+          };
+
+  SNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: CarparkDataNotificationTopic

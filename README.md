@@ -20,49 +20,47 @@ If python is not installed, download python [here](https://www.python.org/downlo
 
 ### Running the Code manually
 - Make sure the virtual environment is activated
-- Run `python3 main.py` to execute the data extraction 
+- Run `./venv/bin/python3 src/main.py` to execute the data extraction 
 - The output CSV files will be generated in data directory for task1
 
 ## Task 2
 Located in task2 directory, currently it is all pseudo code for both IAC and backend.
 
-## Makefile
-WIP, added to attempt to create aws resources
+iac (infrastructure as code) and backend directory have separate makefile
 
 ## Architecture
 
-### Serverless Architecture with Data Processing:
-```txt
-Mobile App -> API Gateway -> Lambda -> DynamoDB
-                                    -> S3 (Data Storage)
-                                    -> Kinesis Data Streams -> Lambda (Data Processing) -> DynamoDB
-``` 
+Below are the list of possible infrastructures that can be created. Draft in cloudformation.
 
-### Serverless Architecture with Caching:
-```txt
-Mobile App -> API Gateway -> Lambda -> DynamoDB
-                                    -> ElastiCache (Caching)
-```
+### mobile-app-api-lambda-database.yaml
+Mobile App -> API Gateway -> Lambda -> DynamoDB or Amazon RDS
 
-### Serverless Architecture with Event-Driven Updates:
-```txt
-Mobile App -> API Gateway -> Lambda -> DynamoDB
-                                    -> SNS (Notification Service)
-Carpark Data Source -> S3 -> Lambda -> DynamoDB
-                                    -> SNS (Notification Service)
-```
+### mobile-app-api-lambda-storage-caching.yaml
+Mobile App -> API Gateway -> Lambda -> S3 (Data Storage) or ElastiCache (Caching)
 
-### Serverless Architecture with API Composition:
-```txt
-Mobile App -> API Gateway -> Lambda (Carpark Availability API) -> DynamoDB
-                                                               -> Lambda (Carpark Details API) -> DynamoDB
-```
+### mobile-app-api-lambda-kinesis-processing-database.yaml
+Mobile App -> API Gateway -> Lambda -> Kinesis Data Streams -> Lambda (Data Processing) -> DynamoDB or Amazon RDS
 
-### Serverless Architecture with EventBridge:
-```txt
-Mobile App -> API Gateway -> Lambda -> DynamoDB
-                                    -> EventBridge -> Lambda (Data Sync) -> External API
-```
+### carpark-data-s3-lambda-sns.yaml
+Carpark Data Source -> S3 -> Lambda -> SNS (Notification Service)
+
+### mobile-app-api-lambda-carpark-availability-details-database.yaml
+Mobile App -> API Gateway -> Lambda (Carpark Availability API) -> Lambda (Carpark Details API) -> DynamoDB or Amazon RDS
+
+### mobile-app-api-lambda-eventbridge-data-sync-external-api.yaml
+Mobile App -> API Gateway -> Lambda -> EventBridge -> Lambda (Data Sync) -> External API
+
+### mobile-app-api-ecs-fargate-database.yaml
+Mobile App -> API Gateway -> Amazon ECS (Fargate) -> DynamoDB or Amazon RDS
+
+### mobile-app-alb-ecs-ec2-database.yaml
+Mobile App -> Application Load Balancer -> Amazon ECS (EC2) -> DynamoDB or Amazon RDS
+
+### mobile-app-api-elastic-beanstalk-database.yaml
+Mobile App -> Amazon API Gateway -> AWS Elastic Beanstalk -> DynamoDB or Amazon RDS
+
+### mobile-app-appsync-ecs-fargate-database.yaml
+Mobile App -> Amazon AppSync (GraphQL) -> Amazon ECS (Fargate) -> DynamoDB or Amazon RDS
 
 ## System Design
 
@@ -92,66 +90,292 @@ Mobile App -> API Gateway -> Lambda -> DynamoDB
    - Send the response back to the API Gateway
 - HTTP Response back to mobile app
 
-## Database Schema (DynamoDB):
+## Database Schema (NOSQL or SQL):
+```json
+// Carparks Table in dynamoDB
+{
+  "TableName": "Carparks",
+  "KeySchema": [
+    {
+      "AttributeName": "car_park_no",
+      "KeyType": "HASH"
+    }
+  ],
+  "AttributeDefinitions": [
+    {
+      "AttributeName": "car_park_no",
+      "AttributeType": "S"
+    }
+  ],
+  "ProvisionedThroughput": {
+    "ReadCapacityUnits": 5,
+    "WriteCapacityUnits": 5
+  }
+}
 
-### Table: Carparks
-- car_park_no (Partition Key, String)
-- address (String)
-- x_coord (Number)
-- y_coord (Number)
-- car_park_type (String)
-- type_of_parking_system (String)
-- short_term_parking (String)
-- free_parking (String)
-- night_parking (String)
-- car_park_decks (Number)
-- gantry_height (Number)
-- car_park_basement (String)
+// CarparkAvailability Table in dynamoDB
+{
+  "TableName": "CarparkAvailability",
+  "KeySchema": [
+    {
+      "AttributeName": "car_park_no",
+      "KeyType": "HASH"
+    },
+    {
+      "AttributeName": "timestamp",
+      "KeyType": "RANGE"
+    }
+  ],
+  "AttributeDefinitions": [
+    {
+      "AttributeName": "car_park_no",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "timestamp",
+      "AttributeType": "N"
+    }
+  ],
+  "ProvisionedThroughput": {
+    "ReadCapacityUnits": 5,
+    "WriteCapacityUnits": 5
+  }
+}
+```
 
-### Table: CarparkAvailability
-- car_park_no (Partition Key, String)
-- timestamp (Sort Key, Number)
-- total_lots (Number)
-- available_lots (Number)
+```sql
+-- Carparks Table
+CREATE TABLE Carparks (
+  car_park_no VARCHAR(50) PRIMARY KEY,
+  address VARCHAR(255),
+  x_coord DECIMAL(10, 8),
+  y_coord DECIMAL(10, 8),
+  car_park_type VARCHAR(50),
+  type_of_parking_system VARCHAR(50),
+  short_term_parking VARCHAR(50),
+  free_parking VARCHAR(50),
+  night_parking VARCHAR(50),
+  car_park_decks INT,
+  gantry_height DECIMAL(5, 2),
+  car_park_basement VARCHAR(50)
+);
 
-## API Documentation:
+-- CarparkAvailability Table
+CREATE TABLE CarparkAvailability (
+  car_park_no VARCHAR(50),
+  timestamp BIGINT,
+  total_lots INT,
+  available_lots INT,
+  PRIMARY KEY (car_park_no, timestamp),
+  FOREIGN KEY (car_park_no) REFERENCES Carparks(car_park_no)
+);
+```
 
-### GET /carparks/nearby
-Description: Retrieves a list of nearby carparks with available parking lots based on user's location.
+## API Documentation: TODO: put this in swagger instead of readme
+
+### Get Available Carparks
+Path: /carparks/available
+
+Method: GET
+
+Description: Returns a list of carparks with available parking lots near a given location
 
 Query Parameters:
 
-latitude (required): User's latitude coordinate
+latitude (required): Latitude coordinate of the user's location or search location
 
-longitude (required): User's longitude coordinate
+longitude (required): Longitude coordinate of the user's location or search location
 
-radius (optional, default 1000): Search radius in meters
+radius (optional): Search radius in meters. Default is 500m if not provided.
 
-Response:
+Responses:
 
-200 OK: Returns a list of nearby carparks with available parking lots
+200 OK on success. Response body:
+```json
+{
+  "carparks": [
+    {
+      "carparkNo": "C12",
+      "address": "123 Main St",  
+      "latitude": 1.290270,
+      "longitude": 103.851959,
+      "totalLots": 500,
+      "availableLots": 120
+    },
+    {
+      "carparkNo": "J39",  
+      "address": "456 Park Ave",
+      "latitude": 1.292049, 
+      "longitude": 103.853827,
+      "totalLots": 220,
+      "availableLots": 50  
+    }
+  ]
+}
+```
+400 Bad Request if latitude or longitude parameters are missing or invalid. Response body:
+```json
+{
+  "error": "Invalid or missing coordinates"
+}
+```
+500 Internal Server Error for unexpected errors
 
-400 Bad Request: Invalid or missing parameters
+### Get Carpark Details
+Path: /carparks/{carparkNo}
 
-### GET /carparks/search
+Method: GET
 
-Description: Retrieves a list of carparks with available parking lots based on user input location.
+Description: Returns details about a specific carpark
+
+Path Parameters:
+
+carparkNo (required): Unique identifier of the carpark
+
+Responses:
+
+200 OK on success. Response body:
+```json
+{
+  "carparkNo": "C12",
+  "address": "123 Main St",
+  "latitude": 1.290270, 
+  "longitude": 103.851959,
+  "carParkType": "MULTI-STOREY CAR PARK",
+  "parkingSystemType": "ELECTRONIC PARKING",
+  "shortTermParking": "WHOLE DAY",
+  "nightParking": "YES",  
+  "freeParking": "SUN & PH FR 7AM-10.30PM",
+  "gantryHeight": 2
+}
+```
+404 Not Found if carpark does not exist
+
+500 Internal Server Error for unexpected errors
+
+### Get Carpark Availability
+Path: /carparks/{carparkNo}/availability
+
+Method: GET
+
+Description: Returns the current availability status of a specific carpark
+
+Path Parameters:
+
+carparkNo (required): Unique identifier of the carpark
+
+Responses:
+
+200 OK on success. Response body:
+```json
+{
+  "carparkNo": "C12",
+  "totalLots": 500, 
+  "availableLots": 120,
+  "updateTime": "2023-06-15T10:30:00Z"
+}
+```
+404 Not Found if carpark does not exist
+
+500 Internal Server Error for unexpected errors
+
+### Get Carparks by Address
+Path: /carparks/search
+
+Method: GET
+
+Description: Searches for carparks near a given address
 
 Query Parameters:
 
-location (required): User input location (e.g., postal code, address)
+address (required): Address string to search for
 
-Response:
+radius (optional): Search radius in meters. Default is 500m if not provided.
 
-200 OK: Returns a list of carparks with available parking lots near the input location
+Responses:
 
-400 Bad Request: Invalid or missing parameters
+200 OK on success. Response body same as /carparks/available endpoint
+
+400 Bad Request if address parameter is missing
+
+500 Internal Server Error for unexpected errors
+
+### Reserve Parking Lot
+Path: /carparks/{carparkNo}/reserve
+
+Method: POST
+
+Description: Allows user to reserve a parking lot at a carpark
+
+Path Parameters:
+
+carparkNo (required): Unique identifier of the carpark
+
+Request Body:
+```json
+{
+  "lotNo": "A12",
+  "plateNo": "SGA1234B",
+  "duration": 60
+}
+```
+
+Responses:
+
+200 OK on successful reservation. Response body:
+```json
+{
+  "reservationId": "R397540",
+  "lotNo": "A12",
+  "expiresAt": "2023-06-15T11:30:00Z"  
+}
+```
+
+400 Bad Request if request body is invalid
+
+404 Not Found if carpark or lot does not exist
+
+409 Conflict if lot is already reserved/occupied
+
+500 Internal Server Error for unexpected errors
+
+### Update Parking Lot Status
+Path: /carparks/{carparkNo}/lots/{lotNo}
+
+Method: PUT
+
+Description: Allows updating the status of a parking lot (e.g. when vehicle enters/exits). To be called by carpark system.
+
+Path Parameters:
+
+carparkNo (required): Unique identifier of the carpark
+
+lotNo (required): Lot number
+
+Request Body:
+```json
+{
+  "status": "occupied",
+  "plateNo": "SGA1234B" 
+}
+```
+Responses:
+
+200 OK on successful update
+
+400 Bad Request if status is invalid
+
+404 Not Found if carpark or lot does not exist
+
+500 Internal Server Error for unexpected errors
 
 ### Error Handling:
 
-If the user inputs a non-existing location or invalid coordinates, the API will return a 400 Bad Request response with an appropriate error message.
+All endpoints return appropriate HTTP status codes (e.g. 200, 400, 404, 500)
 
-If no carparks are found within the specified radius or near the input location, the API will return an empty list.
+Detailed error messages are provided in the response body for 4xx and 5xx errors
+
+If no available carparks are found, the carparks array in the response will be empty
 
 ### Additional Features:
 
