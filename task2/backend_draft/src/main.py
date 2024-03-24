@@ -139,16 +139,13 @@ def delete_user(user_id):
         return True
     return False
 
-# Carpark endpoints
 def get_carpark(carpark_id):
     return carparks_db.get(carpark_id)
 
-def get_carparks_by_location(lat, lng, radius=1000):
-    # Simulated retrieval of carparks within the specified radius
+def get_carparks_by_location():
     carparks = list(carparks_db.values())
-    return carparks[:10]  # Return the first 10 carparks for testing
+    return carparks[:10]
 
-# Reservation endpoints
 def create_reservation(user_id, carpark_id, license_plate, start_time, end_time):
     reservation_id = generate_id()
     reservation = {
@@ -183,7 +180,6 @@ def cancel_reservation(reservation_id):
         return True
     return False
 
-# Transaction endpoints
 def create_transaction(user_id, carpark_id, reservation_id, amount, payment_method):
     transaction_id = generate_id()
     transaction = {
@@ -210,7 +206,6 @@ def process_payment(transaction_id, payment_method, payment_data):
         return True
     return False
 
-# Webhook endpoints
 def register_webhook(url, events):
     webhook_id = generate_id()
     webhook = {
@@ -231,7 +226,6 @@ def create_carpark_review(carpark_id, user_id, rating, comment):
         "comment": comment,
         "created_at": get_current_datetime()
     }
-    # Simulated storage of review in the carpark's reviews
     carpark = carparks_db.get(carpark_id)
     if carpark:
         if "reviews" not in carpark:

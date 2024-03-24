@@ -119,31 +119,31 @@ Mobile App -> Amazon AppSync (GraphQL) -> Amazon ECS (Fargate) -> DynamoDB or Am
 
 ## System Design
 
-- From mobile app send HTTP Request
-- Invoke Backend Server
-1. Parse Request
-2. Validate Request
-3. Determine User Location
+1. From mobile app send HTTP Request
+2. Invoke Backend Server
+3. Parse Request
+4. Validate Request
+5. Determine User Location
    - Extract location from request payload
    - If location not provided, use default location
-4. Retrieve Nearby Carparks
+6. Retrieve Nearby Carparks
    - Query database based on user location
    - Use GSI (Global Secondary Index) for efficient querying
    - Apply radius filter to get carparks within a certain distance
-5. Filter Available Carparks
+7. Filter Available Carparks
    - Iterate over retrieved carparks
    - Check availability status of each carpark
    - Filter out carparks with no available lots
-6. Retrieve Carpark Details
+8. Retrieve Carpark Details
    - For each available carpark, retrieve additional details
    - Query database Carpark Details table
    - Enrich the response with carpark details
-7. Prepare Response
+9. Prepare Response
    - Format the response payload
    - Include carpark availability and details
-8. Return Response
+10. Return Response
    - Send the response back to the API Gateway
-- HTTP Response back to mobile app
+11. HTTP Response back to mobile app
 
 ### Database Schema:
 I am assuming sql for simplicity sake as nosql data structure are more or less similar.
