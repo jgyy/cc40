@@ -1,110 +1,168 @@
-import csv
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.parse import urlparse, parse_qs
 from datetime import datetime
 
-class CarparkRequestHandler(BaseHTTPRequestHandler):
+carparks = [
+    {
+        'car_park_no': 'ACB',
+        'address': 'BLK 270/271 ALBERT CENTRE BASEMENT CAR PARK',
+        'lat': 30314.7936,
+        'lng': 31490.4942,
+        'car_park_type': 'BASEMENT CAR PARK',
+        'parking_system': 'ELECTRONIC PARKING',
+        'short_term_parking': 'WHOLE DAY',
+        'free_parking': 'NO',
+        'night_parking': 'YES',
+        'car_park_decks': 1,
+        'gantry_height': 1.80,
+        'car_park_basement': 'Y'
+    },
+]
+
+users = [
+    {
+        'user_id': 'user1',
+        'username': 'john_doe',
+        'email': 'john@example.com',
+        'password': 'password123',
+        'created_at': datetime.now().isoformat()
+    },
+]
+
+reservations = [
+    {
+        'reservation_id': 'res1',
+        'user_id': 'user1',
+        'car_park_no': 'ACB',
+        'license_plate': 'ABC123',
+        'start_time': datetime(2023, 6, 1, 9, 0).isoformat(),
+        'end_time': datetime(2023, 6, 1, 12, 0).isoformat(),
+        'status': 'active'
+    },
+]
+
+parking_rates = [
+    {
+        'car_park_no': 'ACB',
+        'vehicle_type': 'car',
+        'time_period': '1 hour',
+        'rate': 1.50
+    },
+]
+
+availability = [
+    {
+        'car_park_no': 'ACB',
+        'timestamp': datetime(2023, 6, 1, 10, 0).isoformat(),
+        'lots_available': 50,
+        'total_lots': 100
+    },
+]
+
+class RequestHandler(BaseHTTPRequestHandler):
+    def _send_response(self, status_code, body=None):
+        self.send_response(status_code)
+        self.send_header('Content-type', 'application/json')
+        self.end_headers()
+        if body:
+            self.wfile.write(json.dumps(body).encode())
+
     def do_GET(self):
-        if self.path.startswith('/carparks'):
-            self.get_available_carparks()
+        parsed_url = urlparse(self.path)
+        path = parsed_url.path
+        query_params = parse_qs(parsed_url.query)
+
+        if path == '/carparks':
+            # Retrieve carparks based on query parameters
+            # Implement pagination, sorting, and filtering logic
+            self._send_response(200, carparks)
+        elif path.startswith('/carparks/'):
+            car_park_no = path.split('/')[-1]
+            if path.endswith('/availability'):
+                # Retrieve current availability for a specific carpark
+                avail = next((a for a in availability if a['car_park_no'] == car_park_no), None)
+                if avail:
+                    self._send_response(200, avail)
+                else:
+                    self._send_response(404, {'error': 'Availability data not found'})
+            elif path.endswith('/availability/historical'):
+                # Retrieve historical availability data for a specific carpark
+                # Implement date range and interval filtering logic
+                historical_data = [a for a in availability if a['car_park_no'] == car_park_no]
+                self._send_response(200, historical_data)
+            elif path.endswith('/pricing'):
+                # Retrieve pricing information for a specific carpark
+                pricing = [p for p in parking_rates if p['car_park_no'] == car_park_no]
+                self._send_response(200, {'parking_rates': pricing})
+            else:
+                # Retrieve a specific carpark by car_park_no
+                carpark = next((c for c in carparks if c['car_park_no'] == car_park_no), None)
+                if carpark:
+                    self._send_response(200, carpark)
+                else:
+                    self._send_response(404, {'error': 'Carpark not found'})
+        elif path.startswith('/users/'):
+            user_id = path.split('/')[-1]
+            if path.endswith('/reservations'):
+                # Retrieve reservations made by a specific user
+                user_reservations = [r for r in reservations if r['user_id'] == user_id]
+                self._send_response(200, user_reservations)
+            else:
+                # Retrieve a specific user by user_id
+                user = next((u for u in users if u['user_id'] == user_id), None)
+                if user:
+                    self._send_response(200, user)
+                else:
+                    self._send_response(404, {'error': 'User not found'})
+        elif path.startswith('/reservations/'):
+            reservation_id = path.split('/')[-1]
+            # Retrieve a specific reservation by reservation_id
+            reservation = next((r for r in reservations if r['reservation_id'] == reservation_id), None)
+            if reservation:
+                self._send_response(200, reservation)
+            else:
+                self._send_response(404, {'error': 'Reservation not found'})
         else:
-            self.send_error(404, 'Not Found')
+            self._send_response(404, {'error': 'Invalid endpoint'})
 
     def do_POST(self):
-        if self.path.startswith('/carparks') and self.path.endswith('/reserve'):
-            self.reserve_parking_lot()
-        else:
-            self.send_error(404, 'Not Found')
-
-    def get_available_carparks(self):
-        latitude = self.get_query_param('latitude')
-        longitude = self.get_query_param('longitude')
-        location = self.get_query_param('location')
-
-        carpark_data = []
-        with open('HDBCarparkInformation.csv', 'r') as file:
-            reader = csv.DictReader(file)
-            for row in reader:
-                carpark_data.append(row)
-
-        if latitude is None or longitude is None:
-            if location is None:
-                self.send_error(400, 'Missing latitude, longitude, or location')
-                return
-            else:
-                # Handle location-based search
-                available_carparks = []
-                for carpark in carpark_data:
-                    if location.lower() in carpark['address'].lower():
-                        available_carparks.append({
-                            'id': carpark['car_park_no'],
-                            'name': carpark['address'],
-                            'latitude': carpark['y_coord'],
-                            'longitude': carpark['x_coord'],
-                            'total_lots': carpark['car_park_type'],
-                            'available_lots': 'N/A',
-                            'last_updated': 'N/A'
-                        })
-        else:
-            # Handle latitude/longitude-based search
-            available_carparks = []
-            for carpark in carpark_data:
-                if float(latitude) - 0.01 <= float(carpark['y_coord']) <= float(latitude) + 0.01 and \
-                float(longitude) - 0.01 <= float(carpark['x_coord']) <= float(longitude) + 0.01:
-                    available_carparks.append({
-                        'id': carpark['car_park_no'],
-                        'name': carpark['address'],
-                        'latitude': carpark['y_coord'],
-                        'longitude': carpark['x_coord'],
-                        'total_lots': carpark['car_park_type'],
-                        'available_lots': 'N/A',
-                        'last_updated': 'N/A'
-                    })
-
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json')
-        self.end_headers()
-        self.wfile.write(json.dumps(available_carparks).encode())
-
-    def reserve_parking_lot(self):
         content_length = int(self.headers['Content-Length'])
-        post_data = self.rfile.read(content_length).decode()
-        data = json.loads(post_data)
+        body = json.loads(self.rfile.read(content_length).decode())
 
-        carpark_id = self.path.split('/')[-2]
-        user_id = data.get('user_id')
-        duration = data.get('duration')
-
-        if not user_id or not duration:
-            self.send_error(400, 'Missing user_id or duration')
-            return
-
-        carpark_data = []
-        with open('HDBCarparkInformation.csv', 'r') as file:
-            reader = csv.DictReader(file)
-            for row in reader:
-                carpark_data.append(row)
-
-        carpark = next((c for c in carpark_data if c['car_park_no'] == carpark_id), None)
-
-        if not carpark:
-            self.send_error(404, 'Carpark not found')
-            return
-
-        self.send_response(200)
-        self.send_header('Content-type', 'application/json')
-        self.end_headers()
-        self.wfile.write(json.dumps({'message': 'Reservation successful'}).encode())
-
-    def get_query_param(self, param):
-        query = self.path.split('?')[-1]
-        params = dict(qc.split('=') for qc in query.split('&') if '=' in qc)
-        return params.get(param)
+        if self.path == '/users':
+            # Create a new user
+            user_id = f"user{len(users) + 1}"
+            user = {
+                'user_id': user_id,
+                'username': body['username'],
+                'email': body['email'],
+                'password': body['password'],
+                'created_at': datetime.now().isoformat()
+            }
+            users.append(user)
+            self._send_response(201, user)
+        elif self.path == '/reservations':
+            # Create a new reservation
+            reservation_id = f"res{len(reservations) + 1}"
+            reservation = {
+                'reservation_id': reservation_id,
+                'user_id': body['user_id'],
+                'car_park_no': body['car_park_no'],
+                'license_plate': body['license_plate'],
+                'start_time': body['start_time'],
+                'end_time': body['end_time'],
+                'status': 'active'
+            }
+            reservations.append(reservation)
+            self._send_response(201, reservation)
+        else:
+            self._send_response(404, {'error': 'Invalid endpoint'})
 
 def run_server(port=8000):
     server_address = ('', port)
-    httpd = HTTPServer(server_address, CarparkRequestHandler)
-    print(f'Starting server on port {port}...')
+    httpd = HTTPServer(server_address, RequestHandler)
+    print(f"Starting server on port {port}")
     httpd.serve_forever()
 
 if __name__ == '__main__':

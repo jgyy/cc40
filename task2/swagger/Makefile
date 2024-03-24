@@ -1,4 +1,4 @@
-.PHONY: all build run stop clean
+.PHONY: all build run stop clean fclean re
 
 all: build run
 
@@ -17,3 +17,9 @@ stop:
 clean:
 	docker compose down --volumes --rmi all --remove-orphans
 
+fclean: clean
+	docker system prune -a -f
+	docker volume prune -f
+	docker network prune -f
+
+re: fclean all

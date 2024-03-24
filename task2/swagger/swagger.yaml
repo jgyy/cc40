@@ -1,0 +1,566 @@
+swagger: '2.0'
+info:
+  title: Carpark Availability API
+  description: API to retrieve carpark information and availability
+  version: 1.0.0
+host: api.parkingsgowhere.com
+schemes:
+- https
+basePath: "/v1"
+paths:
+  "/carparks":
+    get:
+      summary: Get empty carpark lots
+      description: Retrieves a list of carparks with available lots near the provided
+        location
+      parameters:
+      - name: lat
+        in: query
+        required: true
+        type: number
+        format: double
+        description: Latitude of the user's location or input location
+      - name: lng
+        in: query
+        required: true
+        type: number
+        format: double
+        description: Longitude of the user's location or input location
+      - name: radius
+        in: query
+        required: false
+        type: integer
+        default: 1000
+        description: Search radius in meters (defaults to 1km)
+      - name: page
+        in: query
+        required: false
+        type: integer
+        default: 1
+        description: Page number for paginated results
+      - name: per_page
+        in: query
+        required: false
+        type: integer
+        default: 20
+        description: Number of results per page
+      - name: sort_by
+        in: query
+        required: false
+        type: string
+        default: distance
+        enum:
+        - distance
+        - lots_available
+        description: Sort the results by distance or available lots
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              results:
+                type: array
+                items:
+                  "$ref": "#/definitions/Carpark"
+              total_results:
+                type: integer
+              current_page:
+                type: integer
+              total_pages:
+                type: integer
+        '400':
+          description: Invalid location provided
+        '500':
+          description: Internal server error
+  "/carparks/{car_park_no}":
+    get:
+      summary: Get carpark details
+      description: Retrieves details of a specific carpark
+      parameters:
+      - name: car_park_no
+        in: path
+        required: true
+        type: string
+        description: Unique carpark number
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            "$ref": "#/definitions/Carpark"
+        '404':
+          description: Carpark not found
+        '500':
+          description: Internal server error
+  "/carparks/{car_park_no}/availability":
+    get:
+      summary: Get carpark availability
+      description: Retrieves current availability for a specific carpark
+      parameters:
+      - name: car_park_no
+        in: path
+        required: true
+        type: string
+        description: Unique carpark number
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              lots_available:
+                type: integer
+              total_lots:
+                type: integer
+              last_updated:
+                type: string
+                format: date-time
+        '404':
+          description: Carpark not found
+        '500':
+          description: Internal server error
+  "/carparks/{car_park_no}/availability/historical":
+    get:
+      summary: Get historical availability data
+      description: Retrieves historical availability data for a specific carpark
+      parameters:
+      - name: car_park_no
+        in: path
+        required: true
+        type: string
+        description: Unique carpark number
+      - name: start_date
+        in: query
+        required: true
+        type: string
+        format: date
+        description: Start date for historical data
+      - name: end_date
+        in: query
+        required: true
+        type: string
+        format: date
+        description: End date for historical data
+      - name: interval
+        in: query
+        required: false
+        type: string
+        default: hour
+        enum:
+        - hour
+        - day
+        - week
+        - month
+        description: Aggregation interval for historical data
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                timestamp:
+                  type: string
+                  format: date-time
+                lots_available:
+                  type: integer
+        '400':
+          description: Invalid date range provided
+        '404':
+          description: Carpark not found
+        '500':
+          description: Internal server error
+  "/carparks/{car_park_no}/pricing":
+    get:
+      summary: Get carpark pricing
+      description: Retrieves pricing information for a specific carpark
+      parameters:
+      - name: car_park_no
+        in: path
+        required: true
+        type: string
+        description: Unique carpark number
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              parking_rates:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    vehicle_type:
+                      type: string
+                      description: Type of vehicle (e.g., car, motorcycle)
+                    time_period:
+                      type: string
+                      description: Time period for the parking rate
+                    rate:
+                      type: number
+                      format: float
+                      description: Parking rate for the specified time period
+        '404':
+          description: Carpark not found
+        '500':
+          description: Internal server error
+  "/users":
+    post:
+      summary: Create a new user
+      description: Creates a new user account
+      parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            username:
+              type: string
+              description: Unique username for the user
+            email:
+              type: string
+              format: email
+              description: User's email address
+            password:
+              type: string
+              format: password
+              description: User's password
+      responses:
+        '201':
+          description: User created successfully
+          schema:
+            type: object
+            properties:
+              user_id:
+                type: string
+                description: Unique identifier for the user
+              username:
+                type: string
+                description: Username of the created user
+              email:
+                type: string
+                format: email
+                description: Email address of the created user
+        '400':
+          description: Invalid user data provided
+        '409':
+          description: Username or email already exists
+        '500':
+          description: Internal server error
+  "/users/{user_id}":
+    get:
+      summary: Get user profile
+      description: Retrieves the profile information of a specific user
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        type: string
+        description: Unique identifier of the user
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              user_id:
+                type: string
+                description: Unique identifier for the user
+              username:
+                type: string
+                description: Username of the user
+              email:
+                type: string
+                format: email
+                description: Email address of the user
+              created_at:
+                type: string
+                format: date-time
+                description: Timestamp of user creation
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+    put:
+      summary: Update user profile
+      description: Updates the profile information of a specific user
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        type: string
+        description: Unique identifier of the user
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            username:
+              type: string
+              description: Updated username for the user
+            email:
+              type: string
+              format: email
+              description: Updated email address for the user
+      responses:
+        '200':
+          description: User profile updated successfully
+          schema:
+            type: object
+            properties:
+              user_id:
+                type: string
+                description: Unique identifier for the user
+              username:
+                type: string
+                description: Updated username of the user
+              email:
+                type: string
+                format: email
+                description: Updated email address of the user
+        '400':
+          description: Invalid user data provided
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+  "/users/{user_id}/reservations":
+    get:
+      summary: Get user reservations
+      description: Retrieves the list of reservations made by a specific user
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        type: string
+        description: Unique identifier of the user
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                reservation_id:
+                  type: string
+                  description: Unique identifier for the reservation
+                car_park_no:
+                  type: string
+                  description: Unique carpark number
+                license_plate:
+                  type: string
+                  description: License plate number of the reserved vehicle
+                start_time:
+                  type: string
+                  format: date-time
+                  description: Start time of the reservation
+                end_time:
+                  type: string
+                  format: date-time
+                  description: End time of the reservation
+                status:
+                  type: string
+                  enum:
+                  - active
+                  - completed
+                  - cancelled
+                  description: Status of the reservation
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+  "/reservations":
+    post:
+      summary: Create a new reservation
+      description: Creates a new reservation for a specific carpark and user
+      parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            user_id:
+              type: string
+              description: Unique identifier of the user making the reservation
+            car_park_no:
+              type: string
+              description: Unique carpark number
+            license_plate:
+              type: string
+              description: License plate number of the reserved vehicle
+            start_time:
+              type: string
+              format: date-time
+              description: Start time of the reservation
+            end_time:
+              type: string
+              format: date-time
+              description: End time of the reservation
+      responses:
+        '201':
+          description: Reservation created successfully
+          schema:
+            type: object
+            properties:
+              reservation_id:
+                type: string
+                description: Unique identifier for the created reservation
+        '400':
+          description: Invalid reservation data provided
+        '404':
+          description: Carpark or user not found
+        '500':
+          description: Internal server error
+  "/reservations/{reservation_id}":
+    get:
+      summary: Get reservation details
+      description: Retrieves the details of a specific reservation
+      parameters:
+      - name: reservation_id
+        in: path
+        required: true
+        type: string
+        description: Unique identifier of the reservation
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              reservation_id:
+                type: string
+                description: Unique identifier for the reservation
+              user_id:
+                type: string
+                description: Unique identifier of the user who made the reservation
+              car_park_no:
+                type: string
+                description: Unique carpark number
+              license_plate:
+                type: string
+                description: License plate number of the reserved vehicle
+              start_time:
+                type: string
+                format: date-time
+                description: Start time of the reservation
+              end_time:
+                type: string
+                format: date-time
+                description: End time of the reservation
+              status:
+                type: string
+                enum:
+                - active
+                - completed
+                - cancelled
+                description: Status of the reservation
+        '404':
+          description: Reservation not found
+        '500':
+          description: Internal server error
+    put:
+      summary: Update reservation
+      description: Updates the details of a specific reservation
+      parameters:
+      - name: reservation_id
+        in: path
+        required: true
+        type: string
+        description: Unique identifier of the reservation
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            license_plate:
+              type: string
+              description: Updated license plate number of the reserved vehicle
+            start_time:
+              type: string
+              format: date-time
+              description: Updated start time of the reservation
+            end_time:
+              type: string
+              format: date-time
+              description: Updated end time of the reservation
+      responses:
+        '200':
+          description: Reservation updated successfully
+          schema:
+            type: object
+            properties:
+              reservation_id:
+                type: string
+                description: Unique identifier for the updated reservation
+        '400':
+          description: Invalid reservation data provided
+        '404':
+          description: Reservation not found
+        '500':
+          description: Internal server error
+    delete:
+      summary: Cancel reservation
+      description: Cancels a specific reservation
+      parameters:
+      - name: reservation_id
+        in: path
+        required: true
+        type: string
+        description: Unique identifier of the reservation
+      responses:
+        '204':
+          description: Reservation cancelled successfully
+        '404':
+          description: Reservation not found
+        '500':
+          description: Internal server error
+definitions:
+  Carpark:
+    type: object
+    properties:
+      car_park_no:
+        type: string
+        description: Unique carpark number
+      address:
+        type: string
+        description: Address of the carpark
+      lat:
+        type: number
+        format: double
+        description: Latitude coordinate of carpark
+      lng:
+        type: number
+        format: double
+        description: Longitude coordinate of carpark
+      car_park_type:
+        type: string
+        description: Type of carpark (e.g. multistorey, surface, etc.)
+      parking_system:
+        type: string
+        description: Type of parking system (e.g. coupon, electronic)
+      short_term_parking:
+        type: string
+        description: Short term parking timings
+      free_parking:
+        type: string
+        description: Free parking timings
+      night_parking:
+        type: string
+        description: Night parking availability
+      car_park_decks:
+        type: integer
+        description: Number of parking decks
+      gantry_height:
+        type: number
+        format: float
+        description: Height of entry gantry in meters
+      car_park_basement:
+        type: string
+        description: Availability of basement parking

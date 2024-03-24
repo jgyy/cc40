@@ -90,87 +90,62 @@ Mobile App -> Amazon AppSync (GraphQL) -> Amazon ECS (Fargate) -> DynamoDB or Am
    - Send the response back to the API Gateway
 - HTTP Response back to mobile app
 
-## Database Schema (NOSQL or SQL):
-```json
-// Carparks Table in dynamoDB
-{
-  "TableName": "Carparks",
-  "KeySchema": [
-    {
-      "AttributeName": "car_park_no",
-      "KeyType": "HASH"
-    }
-  ],
-  "AttributeDefinitions": [
-    {
-      "AttributeName": "car_park_no",
-      "AttributeType": "S"
-    }
-  ],
-  "ProvisionedThroughput": {
-    "ReadCapacityUnits": 5,
-    "WriteCapacityUnits": 5
-  }
-}
-
-// CarparkAvailability Table in dynamoDB
-{
-  "TableName": "CarparkAvailability",
-  "KeySchema": [
-    {
-      "AttributeName": "car_park_no",
-      "KeyType": "HASH"
-    },
-    {
-      "AttributeName": "timestamp",
-      "KeyType": "RANGE"
-    }
-  ],
-  "AttributeDefinitions": [
-    {
-      "AttributeName": "car_park_no",
-      "AttributeType": "S"
-    },
-    {
-      "AttributeName": "timestamp",
-      "AttributeType": "N"
-    }
-  ],
-  "ProvisionedThroughput": {
-    "ReadCapacityUnits": 5,
-    "WriteCapacityUnits": 5
-  }
-}
-```
-
+## Database Schema:
 ```sql
--- Carparks Table
-CREATE TABLE Carparks (
-  car_park_no VARCHAR(50) PRIMARY KEY,
-  address VARCHAR(255),
-  x_coord DECIMAL(10, 8),
-  y_coord DECIMAL(10, 8),
-  car_park_type VARCHAR(50),
-  type_of_parking_system VARCHAR(50),
-  short_term_parking VARCHAR(50),
-  free_parking VARCHAR(50),
-  night_parking VARCHAR(50),
-  car_park_decks INT,
-  gantry_height DECIMAL(5, 2),
-  car_park_basement VARCHAR(50)
+CREATE TABLE carparks (
+    car_park_no VARCHAR(10) PRIMARY KEY,
+    address VARCHAR(255) NOT NULL,
+    lat DECIMAL(10, 8) NOT NULL,
+    lng DECIMAL(11, 8) NOT NULL,
+    car_park_type VARCHAR(50) NOT NULL,
+    parking_system VARCHAR(50) NOT NULL,
+    short_term_parking VARCHAR(50),
+    free_parking VARCHAR(50),
+    night_parking VARCHAR(10),
+    car_park_decks INTEGER,
+    gantry_height DECIMAL(4, 2),
+    car_park_basement VARCHAR(1)
 );
 
--- CarparkAvailability Table
-CREATE TABLE CarparkAvailability (
-  car_park_no VARCHAR(50),
-  timestamp BIGINT,
-  total_lots INT,
-  available_lots INT,
-  PRIMARY KEY (car_park_no, timestamp),
-  FOREIGN KEY (car_park_no) REFERENCES Carparks(car_park_no)
+CREATE TABLE users (
+    user_id VARCHAR(50) PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE reservations (
+    reservation_id VARCHAR(50) PRIMARY KEY,
+    user_id VARCHAR(50) NOT NULL,
+    car_park_no VARCHAR(10) NOT NULL,
+    license_plate VARCHAR(20) NOT NULL,
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP NOT NULL,
+    status VARCHAR(10) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (car_park_no) REFERENCES carparks(car_park_no)
+);
+
+CREATE TABLE parking_rates (
+    car_park_no VARCHAR(10),
+    vehicle_type VARCHAR(20),
+    time_period VARCHAR(50),
+    rate DECIMAL(8, 2),
+    PRIMARY KEY (car_park_no, vehicle_type, time_period),
+    FOREIGN KEY (car_park_no) REFERENCES carparks(car_park_no)
+);
+
+CREATE TABLE availability (
+    car_park_no VARCHAR(10),
+    timestamp TIMESTAMP,
+    lots_available INTEGER,
+    total_lots INTEGER,
+    PRIMARY KEY (car_park_no, timestamp),
+    FOREIGN KEY (car_park_no) REFERENCES carparks(car_park_no)
 );
 ```
 
 ## API Documentation
-cd to ./task2/swagger and run make command, after that go to browser and
+cd to ./task2/swagger and run make command (docker required), after that go to browser and
 visit http://localhost:8080 to see swagger website on carpark api
