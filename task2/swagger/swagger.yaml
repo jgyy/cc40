@@ -5,12 +5,110 @@ info:
   version: 1.0.0
 host: api.parkingsgowhere.com
 schemes:
-- https
+  - https
 basePath: "/v1"
+tags:
+  - name: Auth
+    description: Authentication and authorization endpoints
+  - name: Users
+    description: User management endpoints
+  - name: Carparks
+    description: Carpark information and availability endpoints
+  - name: Reservations
+    description: Reservation management endpoints
+  - name: Transactions
+    description: Transaction and payment endpoints
+  - name: Analytics
+    description: Reporting and analytics endpoints
 paths:
+  "/auth/login":
+    post:
+      summary: User login
+      tags: [Auth]
+      description: Authenticate user credentials and generate an access token
+      parameters:
+        - name: credentials
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              username:
+                type: string
+              password:
+                type: string
+                format: password
+      responses:
+        '200':
+          description: Successful login
+          schema:
+            type: object
+            properties:
+              access_token:
+                type: string
+              refresh_token:
+                type: string
+              expires_in:
+                type: integer
+                format: int32
+              token_type:
+                type: string
+        '400':
+          description: Invalid credentials
+        '500':
+          description: Internal server error   
+  "/auth/logout":
+    post:
+      summary: User logout
+      tags: [Auth]
+      description: Invalidate the access token and perform logout
+      parameters:
+        - name: access_token
+          in: header
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Successful logout
+        '401':
+          description: Invalid or expired access token
+        '500':
+          description: Internal server error     
+  "/auth/refresh":
+    post:
+      summary: Refresh access token
+      tags: [Auth]
+      description: Generate a new access token using a valid refresh token
+      parameters:
+        - name: refresh_token
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              refresh_token:
+                type: string
+      responses:
+        '200':
+          description: Access token refreshed successfully
+          schema:
+            type: object
+            properties:
+              access_token:
+                type: string
+              expires_in:
+                type: integer
+                format: int32
+              token_type:
+                type: string
+        '400':
+          description: Invalid refresh token
+        '500':
+          description: Internal server error
   "/carparks":
     get:
       summary: Get empty carpark lots
+      tags: [Carparks]
       description: Retrieves a list of carparks with available lots near the provided
         location
       parameters:
@@ -76,6 +174,7 @@ paths:
   "/carparks/{car_park_no}":
     get:
       summary: Get carpark details
+      tags: [Carparks]
       description: Retrieves details of a specific carpark
       parameters:
       - name: car_park_no
@@ -95,6 +194,7 @@ paths:
   "/carparks/{car_park_no}/availability":
     get:
       summary: Get carpark availability
+      tags: [Carparks]
       description: Retrieves current availability for a specific carpark
       parameters:
       - name: car_park_no
@@ -122,6 +222,7 @@ paths:
   "/carparks/{car_park_no}/availability/historical":
     get:
       summary: Get historical availability data
+      tags: [Carparks]
       description: Retrieves historical availability data for a specific carpark
       parameters:
       - name: car_park_no
@@ -174,6 +275,7 @@ paths:
   "/carparks/{car_park_no}/pricing":
     get:
       summary: Get carpark pricing
+      tags: [Carparks]
       description: Retrieves pricing information for a specific carpark
       parameters:
       - name: car_park_no
@@ -209,6 +311,7 @@ paths:
   "/carparks/{car_park_no}/reservations":
     get:
       summary: Get carpark reservations
+      tags: [Carparks]
       description: Retrieves the list of reservations for a specific carpark
       parameters:
       - name: car_park_no
@@ -245,6 +348,7 @@ paths:
   "/carparks/{car_park_no}/reviews":
     get:
       summary: Get carpark reviews
+      tags: [Carparks]
       description: Retrieves the list of reviews for a specific carpark
       parameters:
       - name: car_park_no
@@ -265,6 +369,7 @@ paths:
           description: Internal server error
     post:
       summary: Add carpark review
+      tags: [Carparks]
       description: Adds a new review for a specific carpark
       parameters:
       - name: car_park_no
@@ -288,9 +393,144 @@ paths:
           description: Carpark not found
         '500':
           description: Internal server error  
+  "/carparks/{car_park_no}/amenities":
+    get:
+      summary: Get carpark amenities
+      tags: [Carparks]
+      description: Retrieve the list of amenities available at a specific carpark
+      parameters:
+        - name: car_park_no
+          in: path
+          required: true
+          type: string
+          description: Unique carpark number
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                amenity_type:
+                  type: string
+                  description: Type of amenity (e.g., EV Charging, Car Wash)
+                description:
+                  type: string
+                  description: Description of the amenity
+        '404':
+          description: Carpark not found
+        '500':
+          description: Internal server error        
+  "/carparks/{car_park_no}/operating-hours":
+    get:
+      summary: Get carpark operating hours
+      tags: [Carparks]
+      description: Retrieve the operating hours of a specific carpark
+      parameters:
+        - name: car_park_no
+          in: path
+          required: true
+          type: string
+          description: Unique carpark number
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              weekdays:
+                type: object
+                properties:
+                  open_time:
+                    type: string
+                    format: time
+                  close_time:
+                    type: string
+                    format: time
+              weekends:
+                type: object
+                properties:
+                  open_time:
+                    type: string
+                    format: time
+                  close_time:
+                    type: string
+                    format: time
+              public_holidays:
+                type: object
+                properties:
+                  open_time:
+                    type: string
+                    format: time
+                  close_time:
+                    type: string
+                    format: time
+        '404':
+          description: Carpark not found
+        '500':
+          description: Internal server error        
+  "/carparks/{car_park_no}/directions":
+    get:
+      summary: Get directions to carpark
+      tags: [Carparks]
+      description: Retrieve directions to a specific carpark based on the user's location
+      parameters:
+        - name: car_park_no
+          in: path
+          required: true
+          type: string
+          description: Unique carpark number
+        - name: start_lat
+          in: query
+          required: true
+          type: number
+          format: double
+          description: Latitude of the starting location
+        - name: start_lng
+          in: query
+          required: true
+          type: number
+          format: double
+          description: Longitude of the starting location
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              directions:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    instruction:
+                      type: string
+                      description: Textual instruction for the direction step
+                    distance:
+                      type: number
+                      format: float
+                      description: Distance in meters for the direction step
+                    duration:
+                      type: integer
+                      description: Estimated duration in seconds for the direction step
+              total_distance:
+                type: number
+                format: float
+                description: Total distance in meters from the starting location to the carpark
+              total_duration:
+                type: integer
+                description: Estimated total duration in seconds from the starting location to the carpark
+        '400':
+          description: Invalid starting location provided
+        '404':
+          description: Carpark not found
+        '500':
+          description: Internal server error
   "/users":
     post:
       summary: Create a new user
+      tags: [Users]
       description: Creates a new user account
       parameters:
       - name: body
@@ -335,6 +575,7 @@ paths:
   "/users/{user_id}":
     get:
       summary: Get user profile
+      tags: [Users]
       description: Retrieves the profile information of a specific user
       parameters:
       - name: user_id
@@ -368,6 +609,7 @@ paths:
           description: Internal server error
     put:
       summary: Update user profile
+      tags: [Users]
       description: Updates the profile information of a specific user
       parameters:
       - name: user_id
@@ -412,6 +654,7 @@ paths:
           description: Internal server error
     delete:
       summary: Delete user account
+      tags: [Users]
       description: Deletes a user account and associated data
       parameters:
       - name: user_id
@@ -429,6 +672,7 @@ paths:
   "/users/{user_id}/reservations":
     get:
       summary: Get user reservations
+      tags: [Users]
       description: Retrieves the list of reservations made by a specific user
       parameters:
       - name: user_id
@@ -475,6 +719,7 @@ paths:
   "/users/{user_id}/password":
     put:
       summary: Change user password
+      tags: [Users]
       description: Changes the password for a user account
       parameters:
       - name: user_id
@@ -508,6 +753,7 @@ paths:
   "/users/{user_id}/favorites":
     get:
       summary: Get user favorite carparks
+      tags: [Users]
       description: Retrieves the list of favorite carparks for a user
       parameters:
       - name: user_id
@@ -536,6 +782,7 @@ paths:
   "/users/{user_id}/favorites/{car_park_no}":
     put:
       summary: Add or remove a carpark from user favorites
+      tags: [Users]
       description: Adds or removes a specific carpark from the user's favorite list
       parameters:
       - name: user_id
@@ -570,6 +817,7 @@ paths:
   "/users/{user_id}/vehicles":
     get:
       summary: Get user vehicles
+      tags: [Users]
       description: Retrieves the list of vehicles associated with a user
       parameters:
       - name: user_id
@@ -590,6 +838,7 @@ paths:
           description: Internal server error
     post:
       summary: Add user vehicle
+      tags: [Users]
       description: Adds a new vehicle for a user
       parameters:
       - name: user_id
@@ -616,6 +865,7 @@ paths:
   "/users/{user_id}/vehicles/{vehicle_id}":
     get:
       summary: Get user vehicle
+      tags: [Users]
       description: Retrieves details of a specific vehicle associated with a user
       parameters:
       - name: user_id
@@ -639,6 +889,7 @@ paths:
           description: Internal server error
     delete:
       summary: Remove user vehicle
+      tags: [Users]
       description: Removes a vehicle associated with a user
       parameters:
       - name: user_id
@@ -658,9 +909,76 @@ paths:
           description: User or vehicle not found
         '500':
           description: Internal server error
+  "/users/{user_id}/verify":
+    post:
+      summary: Verify user's email address
+      tags: [Users]
+      description: Verify the email address of a user
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          type: string
+          description: Unique identifier of the user
+        - name: verification_code
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              code:
+                type: string
+                description: Verification code sent to the user's email
+      responses:
+        '200':
+          description: Email address verified successfully
+        '400':
+          description: Invalid verification code provided
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error     
+  "/users/{user_id}/reset-password":
+    post:
+      summary: Reset user's password
+      tags: [Users]
+      description: Reset the password for a user
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          type: string
+          description: Unique identifier of the user
+        - name: reset_details
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              reset_token:
+                type: string
+                description: Password reset token sent to the user's email
+              new_password:
+                type: string
+                format: password
+                description: New password for the user
+              confirm_password:
+                type: string
+                format: password
+                description: Confirmation of the new password
+      responses:
+        '200':
+          description: Password reset successfully
+        '400':
+          description: Invalid reset token or password mismatch
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
   "/reservations":
     post:
       summary: Create a new reservation
+      tags: [Reservations]
       description: Creates a new reservation for a specific carpark and user
       parameters:
       - name: body
@@ -704,6 +1022,7 @@ paths:
   "/reservations/{reservation_id}":
     get:
       summary: Get reservation details
+      tags: [Reservations]
       description: Retrieves the details of a specific reservation
       parameters:
       - name: reservation_id
@@ -750,6 +1069,7 @@ paths:
           description: Internal server error
     put:
       summary: Update reservation
+      tags: [Reservations]
       description: Updates the details of a specific reservation
       parameters:
       - name: reservation_id
@@ -791,6 +1111,7 @@ paths:
           description: Internal server error
     delete:
       summary: Cancel reservation
+      tags: [Reservations]
       description: Cancels a specific reservation
       parameters:
       - name: reservation_id
@@ -803,6 +1124,331 @@ paths:
           description: Reservation cancelled successfully
         '404':
           description: Reservation not found
+        '500':
+          description: Internal server error
+  "/transactions":
+    post:
+      summary: Create a new transaction
+      tags: [Transactions]
+      description: Create a new transaction for a carpark booking or reservation
+      parameters:
+        - name: transaction_details
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              user_id:
+                type: string
+                description: Unique identifier of the user making the transaction
+              carpark_id:
+                type: string
+                description: Unique identifier of the carpark
+              reservation_id:
+                type: string
+                description: Unique identifier of the reservation (if applicable)
+              amount:
+                type: number
+                format: float
+                description: Transaction amount
+              payment_method:
+                type: string
+                description: Payment method used for the transaction
+      responses:
+        '201':
+          description: Transaction created successfully
+          schema:
+            type: object
+            properties:
+              transaction_id:
+                type: string
+                description: Unique identifier of the created transaction
+        '400':
+          description: Invalid transaction details provided
+        '500':
+          description: Internal server error        
+  "/transactions/{transaction_id}":
+    get:
+      summary: Get transaction details
+      tags: [Transactions]
+      description: Retrieve the details of a specific transaction
+      parameters:
+        - name: transaction_id
+          in: path
+          required: true
+          type: string
+          description: Unique identifier of the transaction
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              transaction_id:
+                type: string
+                description: Unique identifier of the transaction
+              user_id:
+                type: string
+                description: Unique identifier of the user associated with the transaction
+              carpark_id:
+                type: string
+                description: Unique identifier of the carpark
+              reservation_id:
+                type: string
+                description: Unique identifier of the reservation (if applicable)
+              amount:
+                type: number
+                format: float
+                description: Transaction amount
+              payment_method:
+                type: string
+                description: Payment method used for the transaction
+              status:
+                type: string
+                description: Current status of the transaction
+              created_at:
+                type: string
+                format: date-time
+                description: Timestamp of when the transaction was created
+        '404':
+          description: Transaction not found
+        '500':
+          description: Internal server error        
+  "/transactions/{transaction_id}/pay":
+    post:
+      summary: Process payment for a transaction
+      tags: [Transactions]
+      description: Process the payment for a specific transaction
+      parameters:
+        - name: transaction_id
+          in: path
+          required: true
+          type: string
+          description: Unique identifier of the transaction
+        - name: payment_details
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              payment_method:
+                type: string
+                description: Payment method selected for the transaction
+              payment_data:
+                type: object
+                description: Additional payment data required based on the selected payment method
+      responses:
+        '200':
+          description: Payment processed successfully
+        '400':
+          description: Invalid payment details provided
+        '404':
+          description: Transaction not found
+        '500':
+          description: Internal server error
+  "/analytics/occupancy":
+    get:
+      summary: Get occupancy statistics
+      tags: [Analytics]
+      description: Retrieve occupancy statistics for carparks over a specified time period
+      parameters:
+        - name: start_date
+          in: query
+          required: true
+          type: string
+          format: date
+          description: Start date of the time period
+        - name: end_date
+          in: query
+          required: true
+          type: string
+          format: date
+          description: End date of the time period
+        - name: carpark_id
+          in: query
+          required: false
+          type: string
+          description: Unique identifier of a specific carpark (optional)
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                carpark_id:
+                  type: string
+                  description: Unique identifier of the carpark
+                occupancy:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      date:
+                        type: string
+                        format: date
+                        description: Date of the occupancy data
+                      total_lots:
+                        type: integer
+                        description: Total number of parking lots in the carpark
+                      occupied_lots:
+                        type: integer
+                        description: Number of occupied parking lots
+                      occupancy_percentage:
+                        type: number
+                        format: float
+                        description: Percentage of occupied parking lots
+        '400':
+          description: Invalid date range provided
+        '500':
+          description: Internal server error     
+  "/analytics/revenue":
+    get:
+      summary: Get revenue data
+      tags: [Analytics]
+      description: Retrieve revenue data for carparks over a specified time period
+      parameters:
+        - name: start_date
+          in: query
+          required: true
+          type: string
+          format: date
+          description: Start date of the time period
+        - name: end_date
+          in: query
+          required: true
+          type: string
+          format: date
+          description: End date of the time period
+        - name: carpark_id
+          in: query
+          required: false
+          type: string
+          description: Unique identifier of a specific carpark (optional)
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                carpark_id:
+                  type: string
+                  description: Unique identifier of the carpark
+                revenue:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      date:
+                        type: string
+                        format: date
+                        description: Date of the revenue data
+                      total_transactions:
+                        type: integer
+                        description: Total number of transactions
+                      total_revenue:
+                        type: number
+                        format: float
+                        description: Total revenue generated
+        '400':
+          description: Invalid date range provided
+        '500':
+          description: Internal server error       
+  "/analytics/usage":
+    get:
+      summary: Get usage patterns and trends
+      tags: [Analytics]
+      description: Retrieve usage patterns and trends for carparks over a specified time period
+      parameters:
+        - name: start_date
+          in: query
+          required: true
+          type: string
+          format: date
+          description: Start date of the time period
+        - name: end_date
+          in: query
+          required: true
+          type: string
+          format: date
+          description: End date of the time period
+        - name: carpark_id
+          in: query
+          required: false
+          type: string
+          description: Unique identifier of a specific carpark (optional)
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                carpark_id:
+                  type: string
+                  description: Unique identifier of the carpark
+                usage_patterns:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      time_slot:
+                        type: string
+                        description: Time slot (e.g., hourly, daily, weekly)
+                      average_occupancy:
+                        type: number
+                        format: float
+                        description: Average occupancy percentage for the time slot
+                      peak_hours:
+                        type: array
+                        items:
+                          type: string
+                          description: Peak hours with high occupancy
+                      slack_hours:
+                        type: array
+                        items:
+                          type: string
+                          description: Slack hours with low occupancy
+        '400':
+          description: Invalid date range provided
+        '500':
+          description: Internal server error      
+  "/webhooks":
+    post:
+      summary: Register a webhook
+      tags: [Webhooks]
+      description: Register a webhook URL to receive real-time updates
+      parameters:
+        - name: webhook_details
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              url:
+                type: string
+                format: uri
+                description: Webhook URL to receive updates
+              events:
+                type: array
+                items:
+                  type: string
+                  description: Event types to subscribe to (e.g., carpark_availability_update, reservation_status_change)
+      responses:
+        '201':
+          description: Webhook registered successfully
+          schema:
+            type: object
+            properties:
+              webhook_id:
+                type: string
+                description: Unique identifier of the registered webhook
+        '400':
+          description: Invalid webhook details provided
         '500':
           description: Internal server error
 definitions:
