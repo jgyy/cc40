@@ -30,8 +30,8 @@ If python is not installed, download python [here](https://www.python.org/downlo
 ### Code Explaination
 
 - Overview
-  - The python script extract restaurant data and events from (restaurant_data.json)[https://raw.githubusercontent.com/Papagoat/brain-assessment/main/restaurant_data.json]
-  - Map country codes to country names using (Country-Code.xlsx)[https://github.com/Papagoat/brain-assessment/blob/main/Country-Code.xlsx?raw=true]
+  - The python script extract restaurant data and events from [restaurant_data.json](https://raw.githubusercontent.com/Papagoat/brain-assessment/main/restaurant_data.json)
+  - Map country codes to country names using [Country-Code.xlsx](https://github.com/Papagoat/brain-assessment/blob/main/Country-Code.xlsx?raw=true)
   - Determine rating thresholds based on aggregate ratings via `def get_rating_thresholds(data):`.
   - Save the extracted data as restaurant_events.csv and restaurants.csv
   - Libraries used: os, csv, json, datetime, urllib.request, openpyxl
@@ -118,6 +118,7 @@ Mobile App -> Amazon AppSync (GraphQL) -> Amazon ECS (Fargate) -> DynamoDB or Am
 ```
 
 ## System Design
+can refer to backend directory to see the python http server also.
 
 1. From mobile app send HTTP Request
 2. Invoke Backend Server
@@ -204,5 +205,6 @@ CREATE TABLE availability (
 ```
 
 ### API Documentation
+
 cd to ./task2/swagger and run make command (docker required), after that go to browser and
 visit http://localhost:8080 to see swagger website on carpark api
