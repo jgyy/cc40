@@ -206,6 +206,42 @@ paths:
           description: Carpark not found
         '500':
           description: Internal server error
+  "/carparks/{car_park_no}/reservations":
+    get:
+      summary: Get carpark reservations
+      description: Retrieves the list of reservations for a specific carpark
+      parameters:
+      - name: car_park_no
+        in: path
+        required: true
+        type: string
+        description: Unique carpark number
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                reservation_id:
+                  type: string
+                  description: Unique identifier for the reservation
+                user_id:
+                  type: string
+                  description: Unique identifier of the user who made the reservation
+                start_time:
+                  type: string
+                  format: date-time
+                  description: Start time of the reservation
+                end_time:
+                  type: string
+                  format: date-time
+                  description: End time of the reservation
+        '404':
+          description: Carpark not found
+        '500':
+          description: Internal server error
   "/users":
     post:
       summary: Create a new user
@@ -328,6 +364,22 @@ paths:
           description: User not found
         '500':
           description: Internal server error
+    delete:
+      summary: Delete user account
+      description: Deletes a user account and associated data
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        type: string
+        description: Unique identifier of the user
+      responses:
+        '204':
+          description: User account deleted successfully
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error  
   "/users/{user_id}/reservations":
     get:
       summary: Get user reservations
@@ -372,6 +424,101 @@ paths:
                   description: Status of the reservation
         '404':
           description: User not found
+        '500':
+          description: Internal server error
+  "/users/{user_id}/password":
+    put:
+      summary: Change user password
+      description: Changes the password for a user account
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        type: string
+        description: Unique identifier of the user
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            current_password:
+              type: string
+              format: password
+              description: Current password of the user
+            new_password:
+              type: string
+              format: password
+              description: New password for the user
+      responses:
+        '200':
+          description: Password changed successfully
+        '400':
+          description: Invalid current password provided
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+  "/users/{user_id}/favorites":
+    get:
+      summary: Get user favorite carparks
+      description: Retrieves the list of favorite carparks for a user
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        type: string
+        description: Unique identifier of the user
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                car_park_no:
+                  type: string
+                  description: Unique carpark number
+                address:
+                  type: string
+                  description: Address of the carpark
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error  
+  "/users/{user_id}/favorites/{car_park_no}":
+    put:
+      summary: Add or remove a carpark from user favorites
+      description: Adds or removes a specific carpark from the user's favorite list
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        type: string
+        description: Unique identifier of the user
+      - name: car_park_no
+        in: path
+        required: true
+        type: string
+        description: Unique carpark number
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          properties:
+            action:
+              type: string
+              enum: [add, remove]
+              description: Action to perform (add or remove)
+      responses:
+        '200':
+          description: Carpark added to or removed from favorites successfully
+        '400':
+          description: Invalid action provided
+        '404':
+          description: User or carpark not found
         '500':
           description: Internal server error
   "/reservations":
