@@ -1,3 +1,6 @@
+# Assumptions
+This README assumes that the user is either using macos, linux or wsl to execute the program as commands such as `make` is unavailable in cmd and powershell for windows. User also need docker installed in their PC in order to test swagger app.
+
 ## Task 1
 Located in task1 directory, run make or python3 command there
 
@@ -17,50 +20,102 @@ If python is not installed, download python [here](https://www.python.org/downlo
 - `make run` execute python script
 - `make test` to run unit tester
 - `make fclean` cleanup the python environment
+- `make lint` run flake8 linter to make sure the python script conform to PEP8 standard.
 
 ### Running the Code manually
 - Make sure the virtual environment is activated
 - Run `./venv/bin/python3 src/main.py` to execute the data extraction 
 - The output CSV files will be generated in data directory for task1
 
+### Code Explaination
+
+- Overview
+  - The python script extract restaurant data and events from (restaurant_data.json)[https://raw.githubusercontent.com/Papagoat/brain-assessment/main/restaurant_data.json]
+  - Map country codes to country names using (Country-Code.xlsx)[https://github.com/Papagoat/brain-assessment/blob/main/Country-Code.xlsx?raw=true]
+  - Determine rating thresholds based on aggregate ratings via `def get_rating_thresholds(data):`.
+  - Save the extracted data as restaurant_events.csv and restaurants.csv
+  - Libraries used: os, csv, json, datetime, urllib.request, openpyxl
+
+- Data Loading
+  - `def load_json_data(file_path):` Loads data from a JSON file
+  - `def load_xlsx_data(file_path):` Loads data from an Excel file using openpyxl library, Maps country codes to country names
+
+- `def extract_restaurants(data, country_codes):`
+  - Extracts relevant fields from the restaurant data
+  - Maps rating text to rating categories
+  - Stores the extracted data in a list of dictionaries
+
+- `def extract_restaurant_events(data):`
+  - Extracts events for restaurants in April 2019
+  - Stores the extracted event data in a list of dictionaries
+
+- `def write_csv(file_path, data, fieldnames):`
+  - Writes the extracted data to a CSV file
+  - Uses the csv library to create a DictWriter
+
+- `def get_rating_thresholds(data):`
+  - Calculates the thresholds for different rating categories
+  - Based on the unique aggregate ratings in the data
+
+- `if __name__ == '__main__':`
+  - Downloads the JSON and Excel files.
+  - Loads the data using `load_json_data` and `load_xlsx_data`.
+  - Extracts restaurants and events data
+  - Writes the extracted data to restaurant_events.csv and restaurants.csv.
+  - Prints the rating thresholds.
+```sh
+User Aggregate Rating Thresholds:
+Excellent: 4.9 - 4.9
+Very Good: 4.8 - 4.9
+Good: 4.7 - 4.8
+Average: 4.6 - 4.7
+Poor: 0.0 - 4.6
+```
+
 ## Task 2
-Located in task2 directory, currently it is all pseudo code for both IAC and backend.
+Located in task2 directory, there are 3 directories, iac_draft, backend_draft and swagger
 
-iac (infrastructure as code) and backend directory have separate makefile
+iac (infrastructure as code) directory stores all the cloudformation pseudo script for deploying the backend api.
 
-## Architecture
+backend directory stores the python backend server as a proof of concept for the API, not fully implemented.
+
+swagger directory do have the working swagger app, make sure you have docker installed in the system and just run `make` command.
+
+### Architecture
 
 Below are the list of possible infrastructures that can be created. Draft in cloudformation.
 
-### mobile-app-api-lambda-database.yaml
+```txt
+mobile-app-api-lambda-database.yaml
 Mobile App -> API Gateway -> Lambda -> DynamoDB or Amazon RDS
 
-### mobile-app-api-lambda-storage-caching.yaml
+mobile-app-api-lambda-storage-caching.yaml
 Mobile App -> API Gateway -> Lambda -> S3 (Data Storage) or ElastiCache (Caching)
 
-### mobile-app-api-lambda-kinesis-processing-database.yaml
+mobile-app-api-lambda-kinesis-processing-database.yaml
 Mobile App -> API Gateway -> Lambda -> Kinesis Data Streams -> Lambda (Data Processing) -> DynamoDB or Amazon RDS
 
-### carpark-data-s3-lambda-sns.yaml
+carpark-data-s3-lambda-sns.yaml
 Carpark Data Source -> S3 -> Lambda -> SNS (Notification Service)
 
-### mobile-app-api-lambda-carpark-availability-details-database.yaml
+mobile-app-api-lambda-carpark-availability-details-database.yaml
 Mobile App -> API Gateway -> Lambda (Carpark Availability API) -> Lambda (Carpark Details API) -> DynamoDB or Amazon RDS
 
-### mobile-app-api-lambda-eventbridge-data-sync-external-api.yaml
+mobile-app-api-lambda-eventbridge-data-sync-external-api.yaml
 Mobile App -> API Gateway -> Lambda -> EventBridge -> Lambda (Data Sync) -> External API
 
-### mobile-app-api-ecs-fargate-database.yaml
+mobile-app-api-ecs-fargate-database.yaml
 Mobile App -> API Gateway -> Amazon ECS (Fargate) -> DynamoDB or Amazon RDS
 
-### mobile-app-alb-ecs-ec2-database.yaml
+mobile-app-alb-ecs-ec2-database.yaml
 Mobile App -> Application Load Balancer -> Amazon ECS (EC2) -> DynamoDB or Amazon RDS
 
-### mobile-app-api-elastic-beanstalk-database.yaml
+mobile-app-api-elastic-beanstalk-database.yaml
 Mobile App -> Amazon API Gateway -> AWS Elastic Beanstalk -> DynamoDB or Amazon RDS
 
-### mobile-app-appsync-ecs-fargate-database.yaml
+mobile-app-appsync-ecs-fargate-database.yaml
 Mobile App -> Amazon AppSync (GraphQL) -> Amazon ECS (Fargate) -> DynamoDB or Amazon RDS
+```
 
 ## System Design
 
@@ -90,7 +145,9 @@ Mobile App -> Amazon AppSync (GraphQL) -> Amazon ECS (Fargate) -> DynamoDB or Am
    - Send the response back to the API Gateway
 - HTTP Response back to mobile app
 
-## Database Schema:
+### Database Schema:
+I am assuming sql for simplicity sake as nosql data structure are more or less similar.
+
 ```sql
 CREATE TABLE carparks (
     car_park_no VARCHAR(10) PRIMARY KEY,
@@ -146,6 +203,6 @@ CREATE TABLE availability (
 );
 ```
 
-## API Documentation
+### API Documentation
 cd to ./task2/swagger and run make command (docker required), after that go to browser and
 visit http://localhost:8080 to see swagger website on carpark api

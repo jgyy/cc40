@@ -26,6 +26,7 @@ rating_mapping = {
 }
 
 
+# Loads data from a JSON file
 def load_json_data(file_path):
     with open(file_path) as file:
         data = json.load(file)
@@ -80,6 +81,7 @@ def extract_restaurants(data, country_codes):
     return restaurants
 
 
+# Writes the extracted data to a CSV file
 def write_csv(file_path, data, fieldnames):
     with open(file_path, 'w', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)

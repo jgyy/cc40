@@ -242,6 +242,52 @@ paths:
           description: Carpark not found
         '500':
           description: Internal server error
+  "/carparks/{car_park_no}/reviews":
+    get:
+      summary: Get carpark reviews
+      description: Retrieves the list of reviews for a specific carpark
+      parameters:
+      - name: car_park_no
+        in: path
+        required: true
+        type: string
+        description: Unique carpark number
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Review'
+        '404':
+          description: Carpark not found
+        '500':
+          description: Internal server error
+    post:
+      summary: Add carpark review
+      description: Adds a new review for a specific carpark
+      parameters:
+      - name: car_park_no
+        in: path
+        required: true
+        type: string
+        description: Unique carpark number
+      - name: body
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/Review'
+      responses:
+        '201':
+          description: Review added successfully
+          schema:
+            $ref: '#/definitions/Review'
+        '400':
+          description: Invalid review data provided
+        '404':
+          description: Carpark not found
+        '500':
+          description: Internal server error  
   "/users":
     post:
       summary: Create a new user
@@ -521,6 +567,97 @@ paths:
           description: User or carpark not found
         '500':
           description: Internal server error
+  "/users/{user_id}/vehicles":
+    get:
+      summary: Get user vehicles
+      description: Retrieves the list of vehicles associated with a user
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        type: string
+        description: Unique identifier of the user
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/Vehicle'
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+    post:
+      summary: Add user vehicle
+      description: Adds a new vehicle for a user
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        type: string
+        description: Unique identifier of the user
+      - name: body
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/Vehicle'
+      responses:
+        '201':
+          description: Vehicle added successfully
+          schema:
+            $ref: '#/definitions/Vehicle'
+        '400':
+          description: Invalid vehicle data provided
+        '404':
+          description: User not found
+        '500':
+          description: Internal server error
+  "/users/{user_id}/vehicles/{vehicle_id}":
+    get:
+      summary: Get user vehicle
+      description: Retrieves details of a specific vehicle associated with a user
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        type: string
+        description: Unique identifier of the user
+      - name: vehicle_id
+        in: path
+        required: true
+        type: string
+        description: Unique identifier of the vehicle
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            $ref: '#/definitions/Vehicle'
+        '404':
+          description: User or vehicle not found
+        '500':
+          description: Internal server error
+    delete:
+      summary: Remove user vehicle
+      description: Removes a vehicle associated with a user
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        type: string
+        description: Unique identifier of the user
+      - name: vehicle_id
+        in: path
+        required: true
+        type: string
+        description: Unique identifier of the vehicle
+      responses:
+        '204':
+          description: Vehicle removed successfully
+        '404':
+          description: User or vehicle not found
+        '500':
+          description: Internal server error
   "/reservations":
     post:
       summary: Create a new reservation
@@ -711,3 +848,46 @@ definitions:
       car_park_basement:
         type: string
         description: Availability of basement parking
+  Vehicle:
+    type: object
+    properties:
+      vehicle_id:
+        type: string
+        description: Unique identifier of the vehicle
+      user_id:
+        type: string
+        description: Unique identifier of the user who owns the vehicle
+      license_plate:
+        type: string
+        description: License plate number of the vehicle
+      make:
+        type: string
+        description: Make of the vehicle
+      model:
+        type: string
+        description: Model of the vehicle
+      year:
+        type: integer
+        description: Year of manufacture of the vehicle
+  Review:
+    type: object
+    properties:
+      review_id:
+        type: string
+        description: Unique identifier of the review
+      car_park_no:
+        type: string
+        description: Unique carpark number
+      user_id:
+        type: string
+        description: Unique identifier of the user who posted the review
+      rating:
+        type: integer
+        description: Rating given by the user (e.g., 1-5)
+      comment:
+        type: string
+        description: User's comment or feedback about the carpark
+      created_at:
+        type: string
+        format: date-time
+        description: Timestamp of when the review was created
