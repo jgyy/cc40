@@ -23,7 +23,7 @@ fclean: clean
 	rm -rf $(VENV_NAME)
 
 test:
-	$(VENV_NAME)/bin/$(PYTHON) -m unittest discover $(TEST_DIR)
+	bash $(TEST_DIR)/test.sh
 
 run:
 	$(VENV_NAME)/bin/$(PYTHON) $(SRC_DIR)/main.py
